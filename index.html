@@ -97,6 +97,33 @@
             </div>
         </div>
 
+        <!-- CONTROL PANEL: TRIGGER ANALYSIS BUTTONS -->
+        <section class="glass-card p-6 rounded-3xl border-indigo-500/20">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>🤖</span> Scan Mache A Sou Demann (5M)
+                    </h2>
+                    <p class="text-xs text-slate-400">Klike sou yon bouton pou sèvè a ka rale done M5 epi analize opòtinite yo ak BazaarLink AI.</p>
+                </div>
+                <div id="scan-status" class="hidden font-mono text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl animate-pulse">
+                    ⏳ Analyse ap fèt sou sèvè a...
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button onclick="triggerAnalysis('XAUUSD')" class="px-5 py-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-goldAccent font-mono text-xs font-bold transition-all flex items-center gap-2">
+                    <span>✨</span> Analize XAUUSD (Lò)
+                </button>
+                <button onclick="triggerAnalysis('EURUSD')" class="px-5 py-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-mono text-xs font-bold transition-all flex items-center gap-2">
+                    <span>💱</span> Analize EUR/USD
+                </button>
+                <button onclick="triggerAnalysis('GBPUSD')" class="px-5 py-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-mono text-xs font-bold transition-all flex items-center gap-2">
+                    <span>💱</span> Analize GBP/USD
+                </button>
+            </div>
+        </section>
+
         <!-- STATS BAR -->
         <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
@@ -137,11 +164,32 @@
     <!-- SUPABASE SCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // KOTE POU METE KREDEKYAL YO NAN INDEX.HTML:
-        const SUPABASE_URL = 'https://zffrlogicrwjkjrrbdik.supabase.co'; // Project URL Supabase ou a
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmZnJsb2dpY3J3amtqcnJiZGlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxOTYzMjEsImV4cCI6MjEwMjc3MjMyMX0.6YSppM6viAaGZrG_PC9HPm8zFxmuP_4a5NoWpdNT4d0';              // Anon (Public) Key Supabase ou a
+        // METE KREDEKYAL SUPABASE OU YO ISIT LA:
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co'; 
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';              
         
+        // METE URL SÈVÈ RENDER OU AN ISIT LA:
+        const RENDER_SERVER_URL = 'https://MON-SERVISE-RENDER.onrender.com';
+
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // FONKSYON POU DEKLANCHE ANALIZ LA SOU RENDER
+        async function triggerAnalysis(symbol) {
+            const statusEl = document.getElementById('scan-status');
+            statusEl.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`${RENDER_SERVER_URL}/api/analyze/${symbol}`);
+                const result = await response.json();
+                
+                alert(result.message);
+            } catch (error) {
+                console.error("Erè nan analiz la:", error);
+                alert("Echèk nan koneksyon ak sèvè Render a.");
+            } finally {
+                statusEl.classList.add('hidden');
+            }
+        }
 
         async function loadActiveSignals() {
             const { data: signals, error } = await supabaseClient
