@@ -112,18 +112,11 @@
                 <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all"></div>
                 <p class="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider font-mono">Siyal Ki Aktif</p>
                 <div class="flex items-baseline gap-3">
-                    <p class="text-4xl font-extrabold text-white font-mono tracking-tight">2</p>
+                    <p class="text-4xl font-extrabold text-white font-mono tracking-tight" id="active-count">0</p>
                     <span class="text-xs text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">Live Monitoring</span>
                 </div>
             </div>
         </section>
-
-        <!-- FILTÈ MACHA A -->
-        <div class="flex items-center gap-2 pb-2">
-            <button class="bg-gradient-to-r from-amber-500 to-amber-600 text-blackPure font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all">Tout Siyal Yo</button>
-            <button class="glass-card text-slate-400 hover:text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-white/5">🥇 Gold & Indices</button>
-            <button class="glass-card text-slate-400 hover:text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-white/5">💱 Forex Majors</button>
-        </div>
 
         <!-- ACTIVE SIGNALS SECTION -->
         <section>
@@ -135,89 +128,96 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="active-signals">
-                
-                <!-- GOLD CARD (BUY) -->
-                <div class="glass-card glow-buy border-tradeBuy/30 rounded-3xl p-6 relative overflow-hidden transition-all hover:-translate-y-1">
-                    <div class="absolute top-0 right-0 bg-tradeBuy text-blackPure font-black text-[10px] tracking-widest px-4 py-1.5 rounded-bl-2xl uppercase">
-                        BUY / LONG
-                    </div>
-
-                    <div class="mb-6">
-                        <div class="flex items-center gap-2.5 mb-1">
-                            <h3 class="text-2xl font-extrabold text-white tracking-tight font-mono">XAU/USD</h3>
-                            <span class="text-[10px] font-mono bg-amber-500/10 text-goldAccent px-2 py-0.5 rounded-md border border-amber-500/20 font-bold">GOLD</span>
-                        </div>
-                        <span class="text-xs text-slate-400 font-medium">Timeframe: 15m | NY Session</span>
-                    </div>
-
-                    <div class="space-y-3 text-sm font-mono mb-6 bg-blackPure/40 p-4 rounded-2xl border border-white/5">
-                        <div class="flex justify-between items-center py-1 border-b border-white/5">
-                            <span class="text-slate-400 text-xs font-sans">Pri Antre (Entry):</span>
-                            <span class="font-bold text-white text-base">2,500.50</span>
-                        </div>
-                        <div class="flex justify-between items-center py-1 border-b border-white/5">
-                            <span class="text-slate-400 text-xs font-sans">Take Profit 1:</span>
-                            <span class="font-bold text-tradeBuy">2,508.00 <span class="text-[10px] font-sans opacity-80">(+75 Pips)</span></span>
-                        </div>
-                        <div class="flex justify-between items-center py-1 border-b border-white/5">
-                            <span class="text-slate-400 text-xs font-sans">Take Profit 2:</span>
-                            <span class="font-bold text-tradeBuy">2,515.00 <span class="text-[10px] font-sans opacity-80">(+145 Pips)</span></span>
-                        </div>
-                        <div class="flex justify-between items-center py-1">
-                            <span class="text-slate-400 text-xs font-sans">Stop Loss:</span>
-                            <span class="font-bold text-tradeSell">2,495.00 <span class="text-[10px] font-sans opacity-80">(-55 Pips)</span></span>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
-                        <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span> 5 min de sa</span>
-                        <span class="text-goldAccent font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">R/R 1:2.6</span>
-                    </div>
-                </div>
-
-                <!-- FOREX CARD (SELL) -->
-                <div class="glass-card glow-sell border-tradeSell/30 rounded-3xl p-6 relative overflow-hidden transition-all hover:-translate-y-1">
-                    <div class="absolute top-0 right-0 bg-tradeSell text-white font-black text-[10px] tracking-widest px-4 py-1.5 rounded-bl-2xl uppercase">
-                        SELL / SHORT
-                    </div>
-
-                    <div class="mb-6">
-                        <div class="flex items-center gap-2.5 mb-1">
-                            <h3 class="text-2xl font-extrabold text-white tracking-tight font-mono">EUR/USD</h3>
-                            <span class="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md border border-blue-500/20 font-bold">FOREX</span>
-                        </div>
-                        <span class="text-xs text-slate-400 font-medium">Timeframe: 1h | London Session</span>
-                    </div>
-
-                    <div class="space-y-3 text-sm font-mono mb-6 bg-blackPure/40 p-4 rounded-2xl border border-white/5">
-                        <div class="flex justify-between items-center py-1 border-b border-white/5">
-                            <span class="text-slate-400 text-xs font-sans">Pri Antre (Entry):</span>
-                            <span class="font-bold text-white text-base">1.08800</span>
-                        </div>
-                        <div class="flex justify-between items-center py-1 border-b border-white/5">
-                            <span class="text-slate-400 text-xs font-sans">Take Profit 1:</span>
-                            <span class="font-bold text-tradeBuy">1.08500 <span class="text-[10px] font-sans opacity-80">(+30 Pips)</span></span>
-                        </div>
-                        <div class="flex justify-between items-center py-1 border-b border-white/5">
-                            <span class="text-slate-400 text-xs font-sans">Take Profit 2:</span>
-                            <span class="font-bold text-tradeBuy">1.08200 <span class="text-[10px] font-sans opacity-80">(+60 Pips)</span></span>
-                        </div>
-                        <div class="flex justify-between items-center py-1">
-                            <span class="text-slate-400 text-xs font-sans">Stop Loss:</span>
-                            <span class="font-bold text-tradeSell">1.08950 <span class="text-[10px] font-sans opacity-80">(-15 Pips)</span></span>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center text-xs text-slate-400 pt-1">
-                        <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span> 22 min de sa</span>
-                        <span class="text-indigo-400 font-mono font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">R/R 1:4.0</span>
-                    </div>
-                </div>
-
+                <!-- Siyal yo ap jènère dinamikman ak JavaScript -->
             </div>
         </section>
 
     </main>
 
+    <!-- SUPABASE SCRIPT -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // KOTE POU METE KREDEKYAL YO NAN INDEX.HTML:
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co'; // Project URL Supabase ou a
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';              // Anon (Public) Key Supabase ou a
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadActiveSignals() {
+            const { data: signals, error } = await supabaseClient
+                .from('signals')
+                .select('*')
+                .eq('status', 'ACTIVE')
+                .order('created_at', { ascending: false });
+
+            if (!error && signals) {
+                renderSignals(signals);
+            }
+        }
+
+        function renderSignals(signals) {
+            const container = document.getElementById('active-signals');
+            const activeCount = document.getElementById('active-count');
+            
+            activeCount.innerText = signals.length;
+            container.innerHTML = '';
+
+            if (signals.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full glass-card p-8 rounded-3xl text-center text-slate-500 font-mono text-sm">
+                        Mache a kalm. Pa gen siyal ki aktif pou kounye a...
+                    </div>
+                `;
+                return;
+            }
+
+            signals.forEach(signal => {
+                const isBuy = signal.type.toUpperCase() === 'BUY';
+                const glowClass = isBuy ? 'glow-buy border-tradeBuy/30' : 'glow-sell border-tradeSell/30';
+                const badgeBg = isBuy ? 'bg-tradeBuy text-blackPure' : 'bg-tradeSell text-white';
+
+                const cardHtml = `
+                    <div class="glass-card ${glowClass} rounded-3xl p-6 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 ${badgeBg} font-black text-[10px] tracking-widest px-4 py-1.5 rounded-bl-2xl uppercase">
+                            ${signal.type} / ${isBuy ? 'LONG' : 'SHORT'}
+                        </div>
+
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2.5 mb-1">
+                                <h3 class="text-2xl font-extrabold text-white tracking-tight font-mono">${signal.pair}</h3>
+                                <span class="text-[10px] font-mono bg-amber-500/10 text-goldAccent px-2 py-0.5 rounded-md border border-amber-500/20 font-bold">${signal.category}</span>
+                            </div>
+                            <span class="text-xs text-slate-400 font-medium">Timeframe: ${signal.timeframe}</span>
+                        </div>
+
+                        <div class="space-y-3 text-sm font-mono mb-6 bg-blackPure/40 p-4 rounded-2xl border border-white/5">
+                            <div class="flex justify-between items-center py-1 border-b border-white/5">
+                                <span class="text-slate-400 text-xs font-sans">Pri Antre (Entry):</span>
+                                <span class="font-bold text-white text-base">${signal.entry_price}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-white/5">
+                                <span class="text-slate-400 text-xs font-sans">Take Profit 1:</span>
+                                <span class="font-bold text-tradeBuy">${signal.tp1} <span class="text-[10px] font-sans opacity-80">(+${signal.tp1_pips} Pips)</span></span>
+                            </div>
+                            <div class="flex justify-between items-center py-1">
+                                <span class="text-slate-400 text-xs font-sans">Stop Loss:</span>
+                                <span class="font-bold text-tradeSell">${signal.sl} <span class="text-[10px] font-sans opacity-80">(-${signal.sl_pips} Pips)</span></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        supabaseClient
+            .channel('public:signals')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, () => {
+                loadActiveSignals();
+            })
+            .subscribe();
+
+        loadActiveSignals();
+    </script>
 </body>
 </html>
