@@ -13,10 +13,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 2. BazaarLink AI Setup
+// BazaarLink AI Setup
 const bazaarlink = new OpenAI({
   baseURL: 'https://api.bazaarlink.ai/v1',
-  apiKey: process.env.BAZAARLINK_API_KEY,
+  apiKey: process.env.BAZAARLINK_API_KEY || 'dummy_key', // Anpeche SDK a fè erè si kle a pa jwenn
 });
 
 const TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY;
