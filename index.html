@@ -164,11 +164,11 @@
     <!-- SUPABASE SCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // METE KREDEKYAL SUPABASE OU YO ISIT LA:
+        // KREDEKYAL SUPABASE
         const SUPABASE_URL = 'https://zffrlogicrwjkjrrbdik.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmZnJsb2dpY3J3amtqcnJiZGlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxOTYzMjEsImV4cCI6MjEwMjc3MjMyMX0.6YSppM6viAaGZrG_PC9HPm8zFxmuP_4a5NoWpdNT4d0';              
         
-        // METE URL SÈVÈ RENDER OU AN ISIT LA:
+        // URL SÈVÈ RENDER
         const RENDER_SERVER_URL = 'https://hiv3-trading-bot.onrender.com';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -176,18 +176,24 @@
         // FONKSYON POU DEKLANCHE ANALIZ LA SOU RENDER
         async function triggerAnalysis(symbol) {
             const statusEl = document.getElementById('scan-status');
-            statusEl.classList.remove('hidden');
+            if (statusEl) statusEl.classList.remove('hidden');
 
             try {
                 const response = await fetch(`${RENDER_SERVER_URL}/api/analyze/${symbol}`);
                 const result = await response.json();
                 
-                alert(result.message);
+                if (result && result.message) {
+                    alert(result.message);
+                } else if (result && result.error) {
+                    alert("Erè nan sèvè a: " + result.error);
+                } else {
+                    alert("Analiz fini pou " + symbol);
+                }
             } catch (error) {
                 console.error("Erè nan analiz la:", error);
-                alert("Echèk nan koneksyon ak sèvè Render a.");
+                alert("Echèk nan koneksyon ak sèvè Render a. Asire w sèvè a ap kouri.");
             } finally {
-                statusEl.classList.add('hidden');
+                if (statusEl) statusEl.classList.add('hidden');
             }
         }
 
