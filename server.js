@@ -13,10 +13,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// BazaarLink AI Setup
+// 2. BazaarLink AI Setup
 const bazaarlink = new OpenAI({
   baseURL: 'https://api.bazaarlink.ai/v1',
-  apiKey: process.env.BAZAARLINK_API_KEY || 'dummy_key', // Anpeche SDK a fè erè si kle a pa jwenn
+  apiKey: process.env.BAZAARLINK_API_KEY,
 });
 
 const TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY;
@@ -39,40 +39,24 @@ async function getMarketData(symbol) {
 
 // 4. Endpoint pou deklanche analiz la sou demann (lè yo peze bouton sou sit la)
 app.get('/api/analyze/:symbol', async (req, res) => {
-    const { symbol } = req.params;
+    const symbol = req.params.symbol.toUpperCase();
+    console.log(`\n========================================`);
     console.log(`--- KOUMANSE ANALIZ POU: ${symbol} ---`);
+    console.log(`========================================`);
 
     try {
-        // 1. TÈS API DONE MACHE / BAZAARLINK
-        console.log("1. Ap voye request bay BazaarLink API...");
-        const response = await fetch(`https://api.bazaarlink.com/v1/...`, { // mete URL aktyèl w ap itilize a
-            headers: {
-                'Authorization': `Bearer ${process.env.BAZAARLINK_API_KEY || 'KLE_OU_AN'}`
-            }
-        });
+        // Step 1: Rale done sou Twelve Data
+        console.log("1. Ap rale done M5 sou Twelve Data...");
+        const candleData = await getMarketData(symbol);
 
-        if (!response.ok) {
-            const errorData = await response.text();
-            console.error(`❌ ERÈ NAN BAZAARLINK API (${response.status}):`, errorData);
-            return res.status(response.status).json({ 
-                error: `Erè nan BazaarLink API (${response.status}): ${errorData}` 
+        if (!candleData) {
+            console.error("❌ ERÈ TWELVE DATA: Pa ka jwenn done yo.");
+            return res.status(400).json({
+              success: false,
+              error: "Echèk nan rale done 5mn yo nan Twelve Data."
             });
         }
-
-        const data = await response.json();
-        console.log("✅ BazaarLink reponn ak siksè!");
-
-        // Si w gen yon lòt API (tankou OpenAI / Gemini / Supabase):
-        // Fè menm ti console.log sa anvan ak apre l.
-
-        res.json({ message: `Analiz pou ${symbol} fini san pwoblèm!` });
-
-    } catch (err) {
-        console.error("❌ ERÈ SÈVÈ A:", err.message);
-        res.status(500).json({ error: err.message });
-    }
-});
-        }
+        console.log("✅ Done Twelve Data rale ak siksè!");
 
         // Rekonèt otomatikman si se Lò (GOLD) oswa FOREX
         const category = symbol.includes('XAU') || symbol.includes('GOLD') ? 'GOLD' : 'FOREX';
@@ -105,12 +89,15 @@ app.get('/api/analyze/:symbol', async (req, res) => {
           }
         `;
 
-        // Voye done yo bay BazaarLink AI
+        // Step 2: Voye done yo bay BazaarLink AI
+        console.log("2. Ap voye request bay BazaarLink AI...");
         const completion = await bazaarlink.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.2,
         });
+
+        console.log("✅ BazaarLink AI reponn ak siksè!");
 
         const responseText = completion.choices[0].message.content.trim();
         const cleanJson = responseText.replace(/```json|```/g, '').trim();
@@ -118,13 +105,19 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 
         // Si BazaarLink jwenn siyal, anregistre l nan Supabase
         if (analysis.has_signal) {
+            console.log("3. Nouvo siyal detekte! Ap save nan Supabase...");
             delete analysis.has_signal;
 
             const { data: dbData, error } = await supabase
                 .from('signals')
                 .insert([{ ...analysis, status: 'ACTIVE' }]);
 
-            if (error) throw error;
+            if (error) {
+                console.error("❌ ERÈ SUPABASE:", error.message);
+                throw error;
+            }
+
+            console.log("✅ Siyal la save nan Supabase!");
 
             return res.status(200).json({
               success: true,
@@ -133,16 +126,17 @@ app.get('/api/analyze/:symbol', async (req, res) => {
             });
         }
 
+        console.log("ℹ️ Pa gen okenn siyal detekte pou kounye a.");
         return res.status(200).json({
           success: true,
           message: 'Pa gen okenn siyal sou 5mn pou kounye a.'
         });
 
     } catch (err) {
-        console.error(err);
+        console.error("❌ ERÈ NAN PROCESSUS LA:", err.message);
         return res.status(500).json({ success: false, error: err.message });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Sèvè a ap kouri sou port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Sèvè a ap kouri sou port ${PORT}`));
