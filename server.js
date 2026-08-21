@@ -39,17 +39,39 @@ async function getMarketData(symbol) {
 
 // 4. Endpoint pou deklanche analiz la sou demann (lè yo peze bouton sou sit la)
 app.get('/api/analyze/:symbol', async (req, res) => {
+    const { symbol } = req.params;
+    console.log(`--- KOUMANSE ANALIZ POU: ${symbol} ---`);
+
     try {
-        const symbol = req.params.symbol.toUpperCase();
+        // 1. TÈS API DONE MACHE / BAZAARLINK
+        console.log("1. Ap voye request bay BazaarLink API...");
+        const response = await fetch(`https://api.bazaarlink.com/v1/...`, { // mete URL aktyèl w ap itilize a
+            headers: {
+                'Authorization': `Bearer ${process.env.BAZAARLINK_API_KEY || 'KLE_OU_AN'}`
+            }
+        });
 
-        // Rale done 5 minit yo sou Twelve Data
-        const candleData = await getMarketData(symbol);
-
-        if (!candleData) {
-            return res.status(400).json({
-              success: false,
-              error: "Echèk nan rale done 5mn yo nan Twelve Data."
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error(`❌ ERÈ NAN BAZAARLINK API (${response.status}):`, errorData);
+            return res.status(response.status).json({ 
+                error: `Erè nan BazaarLink API (${response.status}): ${errorData}` 
             });
+        }
+
+        const data = await response.json();
+        console.log("✅ BazaarLink reponn ak siksè!");
+
+        // Si w gen yon lòt API (tankou OpenAI / Gemini / Supabase):
+        // Fè menm ti console.log sa anvan ak apre l.
+
+        res.json({ message: `Analiz pou ${symbol} fini san pwoblèm!` });
+
+    } catch (err) {
+        console.error("❌ ERÈ SÈVÈ A:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
         }
 
         // Rekonèt otomatikman si se Lò (GOLD) oswa FOREX
