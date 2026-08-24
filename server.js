@@ -25,7 +25,6 @@ const TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY;
 async function getMarketData(symbol) {
     let formattedSymbol = symbol;
 
-    // Fòmate 'XAUUSD' kòm 'XAU/USD' oswa 'EURUSD' kòm 'EUR/USD' pou Twelve Data API
     if (!symbol.includes('/')) {
         formattedSymbol = symbol.slice(0, 3) + '/' + symbol.slice(3);
     }
@@ -37,7 +36,7 @@ async function getMarketData(symbol) {
     return data.values;
 }
 
-// 4. Endpoint pou deklanche analiz la sou demann (lè yo peze bouton sou sit la)
+// 4. Endpoint pou deklanche analiz la sou demann
 app.get('/api/analyze/:symbol', async (req, res) => {
     const symbol = req.params.symbol.toUpperCase();
     console.log(`\n========================================`);
@@ -45,7 +44,6 @@ app.get('/api/analyze/:symbol', async (req, res) => {
     console.log(`========================================`);
 
     try {
-        // Step 1: Rale done sou Twelve Data
         console.log("1. Ap rale done M5 sou Twelve Data...");
         const candleData = await getMarketData(symbol);
 
@@ -58,10 +56,8 @@ app.get('/api/analyze/:symbol', async (req, res) => {
         }
         console.log("✅ Done Twelve Data rale ak siksè!");
 
-        // Rekonèt otomatikman si se Lò (GOLD) oswa FOREX
         const category = symbol.includes('XAU') || symbol.includes('GOLD') ? 'GOLD' : 'FOREX';
 
-        // Prepare Prompt pou BazaarLink AI
         const prompt = `
           Ou se yon motè algoritmik pou mache Forex ak Lò.
           Men 10 dènye bouji M5 (5 minit) pou ${symbol}:
@@ -70,40 +66,39 @@ app.get('/api/analyze/:symbol', async (req, res) => {
           Analize pri yo ak tandans lan.
           Si PA GEN opòtinite klè, reponn SÈLMAN: {"has_signal": false}
 
-          Si GEN yon bon opòtinite BUY oswa SELL, reponn SÈLMAN ak JSON sa a:
+          Si GEN yon bon opòtinite BUY oswa SELL, reponn SÈLMAN ak JSON sa a (san okenn lòt tèks):
           {
             "has_signal": true,
             "pair": "${symbol}",
             "category": "${category}",
-            "type": "BUY" oswa "SELL",
-            "entry_price": number,
-            "tp1": number,
-            "tp1_pips": number,
-            "tp2": number,
-            "tp2_pips": number,
-            "sl": number,
-            "sl_pips": number,
+            "type": "BUY",
+            "entry_price": 2650.0,
+            "tp1": 2660.0,
+            "tp1_pips": 100,
+            "tp2": 2670.0,
+            "tp2_pips": 200,
+            "sl": 2640.0,
+            "sl_pips": 100,
             "timeframe": "5m",
             "session": "Live Market",
             "risk_reward": "1:2"
           }
         `;
 
-        // Step 2: Voye done yo bay BazaarLink AI (auto:free = wout gratis, san kredi)
-        console.log("2. Ap voye request bay BazaarLink AI (auto:free)...");
+        console.log("2. Ap voye request bay BazaarLink AI (qwen3.7-flash)...");
+        
         const completion = await bazaarlink.chat.completions.create({
-            model: "auto:free",
+            model: "qwen3.7-flash",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.2,
         });
 
-        console.log(`✅ BazaarLink AI reponn ak siksè! (modèl itilize: ${completion.model || "auto:free"})`);
+        console.log("✅ BazaarLink AI reponn ak siksè!");
 
         const responseText = completion.choices[0].message.content.trim();
         const cleanJson = responseText.replace(/```json|```/g, '').trim();
         const analysis = JSON.parse(cleanJson);
 
-        // Si BazaarLink jwenn siyal, anregistre l nan Supabase
         if (analysis.has_signal) {
             console.log("3. Nouvo siyal detekte! Ap save nan Supabase...");
             delete analysis.has_signal;
