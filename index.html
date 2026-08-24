@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ht" class="dark">
+<html lang="ht" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRADEX TERMINAL | High-Precision FX & Gold Signals</title>
+    <title>TRADEX TERMINAL | MT4/MT5 Execution Signals</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -16,168 +16,149 @@
               mono: ['JetBrains Mono', 'monospace'],
             },
             colors: {
-              blackPure: '#030508',
-              cardDark: 'rgba(10, 15, 26, 0.75)',
-              cardBorder: 'rgba(255, 255, 255, 0.08)',
-              tradeBuy: '#00F076',
-              tradeSell: '#FF3B5C',
-              goldAccent: '#FFB800',
-              neonCyan: '#00E5FF'
+              whitePure: '#FFFFFF',
+              bgLight: '#F8FAFC',
+              cardLight: '#FFFFFF',
+              borderLight: '#E2E8F0',
+              tradeBuy: '#10B981',
+              tradeSell: '#EF4444',
+              goldAccent: '#D97706',
+              brandBlue: '#2563EB'
             }
           }
         }
       }
     </script>
     <style>
-      /* CYBERPUNK GRID BACKGROUND WITH LIVE GRAPHIC LINES */
       body {
-        background-color: #030508;
+        background-color: #F8FAFC;
         background-image: 
-          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
-          radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 184, 0, 0.08), transparent),
-          linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-        background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+          radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.04) 0px, transparent 50%),
+          radial-gradient(at 100% 0%, rgba(217, 119, 6, 0.05) 0px, transparent 50%),
+          linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
         background-attachment: fixed;
       }
 
-      /* GLASSMORPHISM CARDS WITH NEON BORDER */
-      .glass-card {
-        background: rgba(10, 15, 26, 0.7);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        transition: all 0.3s ease;
+      .white-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+        transition: all 0.2s ease-in-out;
       }
-      .glass-card:hover {
-        border-color: rgba(255, 184, 0, 0.3);
-        box-shadow: 0 10px 40px -10px rgba(255, 184, 0, 0.12);
+      .white-card:hover {
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+        border-color: #CBD5E1;
       }
 
-      /* GLOW EFFECTS */
-      .glow-gold { box-shadow: 0 0 30px -5px rgba(255, 184, 0, 0.2); }
-      .glow-buy { box-shadow: 0 0 35px -5px rgba(0, 240, 118, 0.25); }
-      .glow-sell { box-shadow: 0 0 35px -5px rgba(255, 59, 92, 0.25); }
-      .glow-cyan { box-shadow: 0 0 25px -5px rgba(0, 229, 255, 0.2); }
-
-      /* SCAN ANIMATION LINE */
-      .scanline {
-        width: 100%;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #FFB800, transparent);
-        animation: scan 3s linear infinite;
-      }
-      @keyframes scan {
-        0% { transform: translateY(-100%); opacity: 0; }
-        50% { opacity: 1; }
-        100% { transform: translateY(3000%); opacity: 0; }
+      .copy-btn:active {
+        transform: scale(0.92);
       }
     </style>
 </head>
-<body class="text-slate-200 font-sans min-h-screen p-4 md:p-8 antialiased selection:bg-amber-500 selection:text-black">
-
-    <!-- SCANNING LINE EFFECT IN BACKGROUND -->
-    <div class="fixed top-0 left-0 right-0 pointer-events-none z-0 scanline opacity-30"></div>
-
-    <!-- TOP GLOW AMBIANCE -->
-    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-48 bg-amber-500/10 blur-[140px] pointer-events-none"></div>
+<body class="text-slate-800 font-sans min-h-screen p-4 md:p-8 antialiased selection:bg-blue-500 selection:text-white">
 
     <!-- HEADER -->
-    <header class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 mb-8 border-b border-white/10 max-w-7xl mx-auto">
+    <header class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 mb-8 border-b border-slate-200 max-w-7xl mx-auto">
         <div class="flex items-center gap-4">
-            <div class="h-12 w-12 bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 rounded-2xl flex items-center justify-center font-black text-xl text-blackPure shadow-lg shadow-amber-500/30 ring-2 ring-amber-400/40 transform hover:scale-105 transition-all">
+            <div class="h-12 w-12 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-lg shadow-blue-500/20 ring-4 ring-blue-50">
                 FX
             </div>
             <div>
                 <div class="flex items-center gap-2.5">
-                    <h1 class="text-2xl md:text-3xl font-black tracking-wider text-white font-mono">TRADEX<span class="text-amber-400"> TERMINAL</span></h1>
-                    <span class="text-[10px] font-mono bg-amber-500/10 text-goldAccent border border-goldAccent/40 px-2.5 py-0.5 rounded-full font-bold tracking-widest uppercase glow-gold">PRO M5</span>
+                    <h1 class="text-2xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">TRADEX<span class="text-blue-600"> TERMINAL</span></h1>
+                    <span class="text-[10px] font-mono bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">MT4 / MT5 Ready</span>
                 </div>
-                <p class="text-xs text-slate-400 font-medium">Algo-Trading & High-Precision Market Analysis</p>
+                <p class="text-xs text-slate-500 font-medium">Siyal ak enfòmasyon egzak pou w plase trade sou MetaTrader</p>
             </div>
         </div>
 
-        <!-- LIVE SESSIONS STATUS BAR -->
+        <!-- SESSIONS STATUS BAR -->
         <div class="flex items-center gap-2 font-mono text-xs">
-            <span class="glass-card px-3.5 py-2 rounded-xl flex items-center gap-2 text-slate-400 border-white/5">
-                <span class="h-2 w-2 rounded-full bg-slate-600"></span> Asian
+            <span class="white-card px-3.5 py-2 rounded-xl flex items-center gap-2 text-slate-500">
+                <span class="h-2 w-2 rounded-full bg-slate-400"></span> Asian
             </span>
-            <span class="glass-card px-3.5 py-2 rounded-xl flex items-center gap-2 text-emerald-400 border-emerald-500/30 glow-buy">
-                <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span> London
+            <span class="white-card px-3.5 py-2 rounded-xl flex items-center gap-2 text-emerald-600 border-emerald-200 bg-emerald-50/50">
+                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> London
             </span>
-            <span class="glass-card px-3.5 py-2 rounded-xl flex items-center gap-2 text-emerald-400 border-emerald-500/30 glow-buy">
-                <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span> New York
+            <span class="white-card px-3.5 py-2 rounded-xl flex items-center gap-2 text-emerald-600 border-emerald-200 bg-emerald-50/50">
+                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> New York
             </span>
         </div>
     </header>
 
     <main class="relative z-10 max-w-7xl mx-auto space-y-8">
 
-        <!-- HIGH IMPACT NEWS ALERT BAR -->
-        <div class="glass-card bg-amber-500/5 border-amber-500/20 rounded-2xl p-4 flex items-center justify-between text-xs md:text-sm text-amber-200 glow-gold">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-amber-500/20 rounded-xl text-base border border-amber-500/40">⚠️</div>
-                <span><strong class="text-goldAccent font-bold">Volatilité High-Impact:</strong> Siveye nouvèl ekonomik yo sou XAUUSD & Pairs USD sou timeframe M5 lan.</span>
+        <!-- MT4 / MT5 MINI GUIDE TUTORIAL -->
+        <div class="white-card bg-gradient-to-r from-blue-50/80 via-white to-amber-50/50 border-blue-200 rounded-2xl p-5 text-slate-700 text-xs md:text-sm">
+            <div class="flex items-start gap-3">
+                <div class="p-2 bg-blue-600 text-white rounded-xl font-bold text-base shadow-sm">💡</div>
+                <div class="space-y-1">
+                    <h3 class="font-bold text-slate-900 text-sm md:text-base">Kijan pou w mete siyal sa yo sou MetaTrader (MT4/MT5)?</h3>
+                    <p class="text-slate-600 leading-relaxed text-xs">
+                        1. Ouvri MetaTrader -> Chèche pè a (egzanp: <strong>XAUUSD</strong> oswa <strong>EURUSD</strong>).<br>
+                        2. Klike sou <strong>New Order / Market Execution</strong>.<br>
+                        3. Kopye epi kole chif <strong>Stop Loss (SL)</strong> ak <strong>Take Profit (TP1)</strong> yo nan bwat ki rezève pou yo a.<br>
+                        4. Peze bouton kòmande a: <strong>BUY MARKET</strong> (vèt) oswa <strong>SELL MARKET</strong> (wouj).
+                    </p>
+                </div>
             </div>
-            <span class="hidden md:inline-flex font-mono text-[10px] text-amber-400/80 uppercase tracking-widest">Live Scanner</span>
         </div>
 
         <!-- CONTROL PANEL: SCANNER BUTTONS -->
-        <section class="glass-card p-6 md:p-8 rounded-3xl border-indigo-500/20 glow-cyan">
+        <section class="white-card p-6 md:p-8 rounded-3xl">
             <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h2 class="text-xl font-extrabold text-white flex items-center gap-2.5 tracking-tight font-mono">
-                        <span class="text-2xl">🤖</span> AI SCANNER SOU DEMANN (5M)
+                    <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2.5 font-mono">
+                        <span>🤖</span> AI MARKET SCANNER (5M)
                     </h2>
-                    <p class="text-xs text-slate-400 mt-1">Peze yon bouton pou sèvè a ka rale 10 dènye bouji yo sou Twelve Data epi analize l nan BazaarLink AI.</p>
+                    <p class="text-xs text-slate-500 mt-1">Peze yon bouton pou sèvè a ka rale done M5 sou Twelve Data epi analize l nan BazaarLink AI.</p>
                 </div>
-                <div id="scan-status" class="hidden font-mono text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 px-4 py-2 rounded-xl animate-pulse flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Analyse ap fèt sou sèvè a...
+                <div id="scan-status" class="hidden font-mono text-xs text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl animate-pulse flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span> Analyse ap fèt sou sèvè a...
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button onclick="triggerAnalysis('XAUUSD')" class="group relative px-6 py-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-amber-600/5 hover:from-amber-500/20 hover:to-amber-600/10 border border-amber-500/40 text-goldAccent font-mono text-xs font-bold transition-all flex items-center justify-between shadow-lg hover:shadow-amber-500/10 active:scale-95">
-                    <span class="flex items-center gap-2.5 text-sm">
+                <button onclick="triggerAnalysis('XAUUSD')" class="px-6 py-4 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-mono text-xs font-bold transition-all flex items-center justify-between shadow-sm active:scale-95">
+                    <span class="flex items-center gap-2 text-sm">
                         <span>✨</span> Analize XAUUSD (Lò)
                     </span>
-                    <span class="text-[10px] bg-amber-500/20 px-2 py-1 rounded-md text-amber-300 border border-amber-500/30">M5</span>
+                    <span class="text-[10px] bg-amber-200/60 text-amber-900 px-2 py-0.5 rounded-md font-bold">M5</span>
                 </button>
 
-                <button onclick="triggerAnalysis('EURUSD')" class="group relative px-6 py-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-indigo-600/5 hover:from-indigo-500/20 hover:to-indigo-600/10 border border-indigo-500/40 text-indigo-300 font-mono text-xs font-bold transition-all flex items-center justify-between shadow-lg hover:shadow-indigo-500/10 active:scale-95">
-                    <span class="flex items-center gap-2.5 text-sm">
+                <button onclick="triggerAnalysis('EURUSD')" class="px-6 py-4 rounded-2xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-mono text-xs font-bold transition-all flex items-center justify-between shadow-sm active:scale-95">
+                    <span class="flex items-center gap-2 text-sm">
                         <span>💱</span> Analize EUR/USD
                     </span>
-                    <span class="text-[10px] bg-indigo-500/20 px-2 py-1 rounded-md text-indigo-300 border border-indigo-500/30">M5</span>
+                    <span class="text-[10px] bg-blue-200/60 text-blue-900 px-2 py-0.5 rounded-md font-bold">M5</span>
                 </button>
 
-                <button onclick="triggerAnalysis('GBPUSD')" class="group relative px-6 py-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-indigo-600/5 hover:from-indigo-500/20 hover:to-indigo-600/10 border border-indigo-500/40 text-indigo-300 font-mono text-xs font-bold transition-all flex items-center justify-between shadow-lg hover:shadow-indigo-500/10 active:scale-95">
-                    <span class="flex items-center gap-2.5 text-sm">
+                <button onclick="triggerAnalysis('GBPUSD')" class="px-6 py-4 rounded-2xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-mono text-xs font-bold transition-all flex items-center justify-between shadow-sm active:scale-95">
+                    <span class="flex items-center gap-2 text-sm">
                         <span>💱</span> Analize GBP/USD
                     </span>
-                    <span class="text-[10px] bg-indigo-500/20 px-2 py-1 rounded-md text-indigo-300 border border-indigo-500/30">M5</span>
+                    <span class="text-[10px] bg-blue-200/60 text-blue-900 px-2 py-0.5 rounded-md font-bold">M5</span>
                 </button>
             </div>
         </section>
 
         <!-- STATS DASHBOARD -->
         <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="glass-card p-6 rounded-3xl relative overflow-hidden group">
-                <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all"></div>
-                <p class="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-widest font-mono">Total Pips Winrate (Est.)</p>
+            <div class="white-card p-6 rounded-3xl relative overflow-hidden">
+                <p class="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider font-mono">Total Pips Winrate (Est.)</p>
                 <div class="flex items-baseline justify-between">
-                    <p class="text-4xl md:text-5xl font-black text-goldAccent font-mono tracking-tight">+1,450 <span class="text-xs font-sans text-slate-400 font-normal">pips</span></p>
-                    <span class="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">📈 84.5% Precision</span>
+                    <p class="text-4xl md:text-5xl font-extrabold text-amber-600 font-mono tracking-tight">+1,450 <span class="text-xs font-sans text-slate-500 font-normal">pips</span></p>
+                    <span class="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl">📈 84.5% Precision</span>
                 </div>
             </div>
 
-            <div class="glass-card p-6 rounded-3xl relative overflow-hidden group">
-                <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all"></div>
-                <p class="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-widest font-mono">Siyal Aktif Nan Supabase</p>
+            <div class="white-card p-6 rounded-3xl relative overflow-hidden">
+                <p class="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider font-mono">Siyal Aktif Pou Execute</p>
                 <div class="flex items-baseline justify-between">
-                    <p class="text-4xl md:text-5xl font-black text-white font-mono tracking-tight" id="active-count">0</p>
-                    <span class="text-xs text-neonCyan font-semibold bg-neonCyan/10 px-3 py-1 rounded-xl border border-neonCyan/20">Realtime Sync</span>
+                    <p class="text-4xl md:text-5xl font-extrabold text-slate-900 font-mono tracking-tight" id="active-count">0</p>
+                    <span class="text-xs text-blue-700 font-bold bg-blue-50 border border-blue-200 px-3 py-1 rounded-xl">Realtime Sync</span>
                 </div>
             </div>
         </section>
@@ -185,20 +166,20 @@
         <!-- ACTIVE SIGNALS FEED -->
         <section>
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-black text-white flex items-center gap-2.5 tracking-tight font-mono">
-                    <span class="h-3 w-3 rounded-full bg-emerald-400 animate-ping"></span> SIYAL SOU MACHE A (REALTIME)
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2.5 font-mono">
+                    <span class="h-3 w-3 rounded-full bg-emerald-500 animate-ping"></span> SIYAL POU METATRADER (REALTIME)
                 </h2>
-                <span class="text-xs font-mono text-slate-400 bg-white/5 px-3 py-1 rounded-xl border border-white/10">SUPABASE FEED</span>
+                <span class="text-xs font-mono text-slate-500 bg-slate-200/60 px-3 py-1 rounded-xl border border-slate-300">LIVE FEED</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="active-signals">
-                <!-- Siyal yo ap mete dinamikman ak JS -->
+                <!-- Siyal yo ap monte la ak JavaScript -->
             </div>
         </section>
 
     </main>
 
-    <!-- SUPABASE REALTIME JS SDK -->
+    <!-- SUPABASE JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://zffrlogicrwjkjrrbdik.supabase.co'; 
@@ -206,6 +187,21 @@
         const RENDER_SERVER_URL = 'https://hiv3-trading-bot.onrender.com';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Fonksyon pou kopye tèks nan presse-papier (Clipboard)
+        function copyToClipboard(text, elementId) {
+            navigator.clipboard.writeText(text);
+            const el = document.getElementById(elementId);
+            if(el) {
+                const oldText = el.innerText;
+                el.innerText = 'Kopye!';
+                el.classList.add('bg-emerald-100', 'text-emerald-800');
+                setTimeout(() => {
+                    el.innerText = oldText;
+                    el.classList.remove('bg-emerald-100', 'text-emerald-800');
+                }, 1200);
+            }
+        }
 
         async function triggerAnalysis(symbol) {
             const statusEl = document.getElementById('scan-status');
@@ -224,7 +220,7 @@
                 }
             } catch (error) {
                 console.error("Erè nan analiz la:", error);
-                alert("⚠️ Echèk nan koneksyon ak sèvè Render a. Kontwole si sèvè a sou pye.");
+                alert("⚠️ Echèk nan koneksyon ak sèvè Render a.");
             } finally {
                 if (statusEl) statusEl.classList.add('hidden');
             }
@@ -251,46 +247,71 @@
 
             if (signals.length === 0) {
                 container.innerHTML = `
-                    <div class="col-span-full glass-card p-12 rounded-3xl text-center text-slate-400 font-mono text-sm border border-dashed border-white/10">
+                    <div class="col-span-full white-card p-12 rounded-3xl text-center text-slate-400 font-mono text-sm border-dashed">
                         <span class="text-3xl block mb-2">📡</span>
-                        Mache a kalm sou timeframe M5. Pa gen okenn siyal ki aktif pou kounye a...
+                        Pa gen okenn siyal ki aktif sou M5 pou kounye a...
                     </div>
                 `;
                 return;
             }
 
-            signals.forEach(signal => {
+            signals.forEach((signal, idx) => {
                 const isBuy = signal.type.toUpperCase() === 'BUY';
-                const glowClass = isBuy ? 'glow-buy border-tradeBuy/40' : 'glow-sell border-tradeSell/40';
-                const badgeBg = isBuy ? 'bg-tradeBuy text-blackPure shadow-lg shadow-tradeBuy/20' : 'bg-tradeSell text-white shadow-lg shadow-tradeSell/20';
+                const badgeBg = isBuy ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white';
+                const typeBorder = isBuy ? 'border-emerald-500' : 'border-red-500';
 
                 const cardHtml = `
-                    <div class="glass-card ${glowClass} rounded-3xl p-6 relative overflow-hidden transition-all hover:-translate-y-1">
-                        <div class="absolute top-0 right-0 ${badgeBg} font-black text-[11px] tracking-widest px-5 py-2 rounded-bl-2xl font-mono uppercase">
-                            ${signal.type} / ${isBuy ? 'LONG' : 'SHORT'}
+                    <div class="white-card rounded-3xl p-6 relative overflow-hidden border-t-4 ${typeBorder}">
+                        
+                        <!-- HEAD BADGE -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-2xl font-black text-slate-900 font-mono tracking-tight">${signal.pair}</h3>
+                                    <button onclick="copyToClipboard('${signal.pair}', 'copy-pair-${idx}')" id="copy-pair-${idx}" class="copy-btn text-[10px] font-mono bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-2 py-0.5 rounded-md font-bold">📋 Kopye</button>
+                                </div>
+                                <span class="text-xs text-slate-400 font-mono">Timeframe: <strong>${signal.timeframe}</strong></span>
+                            </div>
+                            <span class="${badgeBg} font-black text-xs px-3 py-1 rounded-xl font-mono uppercase tracking-widest shadow-sm">
+                                ${signal.type}
+                            </span>
                         </div>
 
-                        <div class="mb-6">
-                            <div class="flex items-center gap-3 mb-1">
-                                <h3 class="text-3xl font-black text-white tracking-tight font-mono">${signal.pair}</h3>
-                                <span class="text-[10px] font-mono bg-amber-500/10 text-goldAccent px-2.5 py-1 rounded-lg border border-amber-500/30 font-bold">${signal.category}</span>
+                        <!-- PARAMÈT EXÉCUTION POU METATRADER -->
+                        <div class="space-y-2.5 font-mono text-sm mb-5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            
+                            <!-- ENTRY -->
+                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                                <span class="text-slate-500 text-xs font-sans font-medium">Pri Antre (Market Entry):</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-black text-slate-900">${signal.entry_price}</span>
+                                    <button onclick="copyToClipboard('${signal.entry_price}', 'copy-ep-${idx}')" id="copy-ep-${idx}" class="copy-btn text-[10px] bg-white border border-slate-300 text-slate-600 px-1.5 py-0.5 rounded font-sans">📋</button>
+                                </div>
                             </div>
-                            <span class="text-xs text-slate-400 font-mono">Timeframe: <strong class="text-white">${signal.timeframe}</strong></span>
+
+                            <!-- TAKE PROFIT 1 -->
+                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                                <span class="text-slate-500 text-xs font-sans font-medium">Take Profit (TP1):</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-black text-emerald-600">${signal.tp1}</span>
+                                    <button onclick="copyToClipboard('${signal.tp1}', 'copy-tp-${idx}')" id="copy-tp-${idx}" class="copy-btn text-[10px] bg-white border border-slate-300 text-slate-600 px-1.5 py-0.5 rounded font-sans">📋</button>
+                                </div>
+                            </div>
+
+                            <!-- STOP LOSS -->
+                            <div class="flex justify-between items-center py-1">
+                                <span class="text-slate-500 text-xs font-sans font-medium">Stop Loss (SL):</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-black text-red-600">${signal.sl}</span>
+                                    <button onclick="copyToClipboard('${signal.sl}', 'copy-sl-${idx}')" id="copy-sl-${idx}" class="copy-btn text-[10px] bg-white border border-slate-300 text-slate-600 px-1.5 py-0.5 rounded font-sans">📋</button>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="space-y-3 font-mono mb-4 bg-blackPure/60 p-4 rounded-2xl border border-white/10">
-                            <div class="flex justify-between items-center py-1.5 border-b border-white/5">
-                                <span class="text-slate-400 text-xs font-sans">Pri Antre (Entry):</span>
-                                <span class="font-bold text-white text-base">${signal.entry_price}</span>
-                            </div>
-                            <div class="flex justify-between items-center py-1.5 border-b border-white/5">
-                                <span class="text-slate-400 text-xs font-sans">Take Profit 1:</span>
-                                <span class="font-bold text-tradeBuy text-base">${signal.tp1} <span class="text-[10px] font-sans opacity-80">(+${signal.tp1_pips} Pips)</span></span>
-                            </div>
-                            <div class="flex justify-between items-center py-1.5">
-                                <span class="text-slate-400 text-xs font-sans">Stop Loss:</span>
-                                <span class="font-bold text-tradeSell text-base">${signal.sl} <span class="text-[10px] font-sans opacity-80">(-${signal.sl_pips} Pips)</span></span>
-                            </div>
+                        <!-- ACTION FOOTER POU MT4 -->
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-sans">
+                            <span>Risk/Reward: <strong class="text-slate-800 font-mono">${signal.risk_reward || '1:2'}</strong></span>
+                            <span class="text-[11px] font-semibold text-blue-600">Peze ${signal.type} sou MetaTrader</span>
                         </div>
                     </div>
                 `;
@@ -298,7 +319,7 @@
             });
         }
 
-        // SUPABASE REALTIME SUBSCRIPTION
+        // REALTIME LISTENER
         supabaseClient
             .channel('public:signals')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, () => {
