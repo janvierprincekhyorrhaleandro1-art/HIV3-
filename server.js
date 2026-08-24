@@ -153,7 +153,7 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 });
 
 // 7. INTERNAL CRON JOB (KOURI CHAK 7 MINIT SÈLMAN POU LÒ / XAUUSD)
-cron.schedule('*/7 * * * *', async () => {
+//cron.schedule('*/7 * * * *', async () => {
     console.log("\n🚀 [CRON 7MN] Ekzekisyon analiz otomatik sou XAUUSD (Lò)...");
     await runAnalysisTask('XAUUSD', '5min');
 });
