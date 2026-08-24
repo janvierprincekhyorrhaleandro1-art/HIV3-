@@ -111,7 +111,7 @@ async function runAnalysisTask(symbol, interval = '5min') {
 
         // Step 3: BazaarLink AI
         const completion = await bazaarlink.chat.completions.create({
-            model: "auto:free",
+            model: "qwen3.7-flash",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.2,
         });
