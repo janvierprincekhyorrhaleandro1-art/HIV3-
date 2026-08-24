@@ -89,15 +89,15 @@ app.get('/api/analyze/:symbol', async (req, res) => {
           }
         `;
 
-        // Step 2: Voye done yo bay BazaarLink AI
-        console.log("2. Ap voye request bay BazaarLink AI...");
+        // Step 2: Voye done yo bay BazaarLink AI (auto:free = wout gratis, san kredi)
+        console.log("2. Ap voye request bay BazaarLink AI (auto:free)...");
         const completion = await bazaarlink.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "auto:free",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.2,
         });
 
-        console.log("✅ BazaarLink AI reponn ak siksè!");
+        console.log(`✅ BazaarLink AI reponn ak siksè! (modèl itilize: ${completion.model || "auto:free"})`);
 
         const responseText = completion.choices[0].message.content.trim();
         const cleanJson = responseText.replace(/```json|```/g, '').trim();
