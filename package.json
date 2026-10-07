@@ -1,7 +1,7 @@
 {
-  "name": "tradex-backend",
-  "version": "1.0.0",
-  "description": "Forex & Gold Signal Generator Backend",
+  "name": "tradex-paper-trading-backend",
+  "version": "2.0.0",
+  "description": "HIV3 educational paper-trading signal engine",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
