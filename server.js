@@ -267,6 +267,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/api/signals', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('signals').select('*').order('created_at', { ascending: false }).limit(12);
+    if (error) throw error;
+    res.json({ success: true, signals: data || [] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, signals: [] });
+  }
+});
+
 app.get('/api/bot/state', (req, res) => {
   res.json({
     enabled: botControl.enabled,
