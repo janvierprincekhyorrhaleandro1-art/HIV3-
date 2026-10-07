@@ -50,15 +50,20 @@ body{background:#000;color:#fff;overflow-x:hidden}
 </div>
 <div id="scan-status" class="hidden font-mono text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-lg animate-pulse">Ap analize mache a...</div>
 </div>
-<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-center justify-between gap-4">
-  <div>
-    <p class="text-xs font-bold font-mono text-emerald-400">AUTO XAU/USD MONITOR</p>
-    <p class="text-[11px] text-slate-400 mt-1">Bot la ap analize Gold otomatikman. Ou pa bezwen peze Scan.</p>
+<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+  <div class="min-w-0">
+    <div class="flex items-center gap-2">
+      <p class="text-xs font-bold font-mono text-emerald-400">AUTO XAU/USD MONITOR</p>
+      <span id="bot-badge" class="text-[9px] font-mono px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-950 text-emerald-400 font-bold">AUTO ON</span>
+    </div>
+    <p id="bot-message" class="text-[11px] text-slate-400 mt-1">Bot la ap analize Gold otomatikman chak 5 minit.</p>
+    <div class="flex flex-wrap gap-3 mt-3 text-[10px] font-mono">
+      <span>PRICE <b id="live-xau-price" class="text-white">--</b></span>
+      <span>LAST MARKET <b id="last-market-at" class="text-slate-300">--</b></span>
+      <span>LAST SCAN <b id="last-scan-at" class="text-slate-300">--</b></span>
+    </div>
   </div>
-  <div class="flex items-center gap-2 text-[10px] font-mono">
-    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-    <span class="text-emerald-400 font-bold">AUTO ON</span>
-  </div>
+  <button id="bot-toggle" type="button" onclick="toggleBot()" class="min-w-[118px] px-4 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500 text-black text-xs font-black font-mono hover:bg-emerald-400 transition">BOT ON</button>
 </div>
 </section>
 
@@ -117,6 +122,9 @@ function showToast(type,message){const c=document.getElementById('toast-containe
 function requestNotificationPermission(){if('Notification'in window)Notification.requestPermission().then(p=>showToast(p==='granted'?'SUCCESS':'INFO',p==='granted'?'Notifikasyon aktive.':'Notifikasyon pa aktive.'))}
 function sendBrowserNotification(title,body){if('Notification'in window&&Notification.permission==='granted')new Notification(title,{body})}
 
+function formatTime(v){if(!v)return '--';const d=new Date(v);return Number.isNaN(d.getTime())?'--':d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+async function loadBotState(){try{const r=await fetch(RENDER_SERVER_URL+'/api/bot/state');const b=await r.json();const btn=document.getElementById('bot-toggle'),badge=document.getElementById('bot-badge');btn.innerText=b.enabled?'BOT ON':'BOT OFF';btn.className=b.enabled?'min-w-[118px] px-4 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500 text-black text-xs font-black font-mono hover:bg-emerald-400 transition':'min-w-[118px] px-4 py-2.5 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 text-xs font-black font-mono hover:bg-red-500/20 transition';badge.innerText=b.enabled?'AUTO ON':'AUTO OFF';document.getElementById('bot-message').innerText=b.enabled?'Bot la ap analize Gold otomatikman chak 5 minit.':'Bot la OFF. Li pap fè nouvo scan oswa ouvri nouvo paper position.';document.getElementById('live-xau-price').innerText=b.lastPrice?Number(b.lastPrice).toFixed(2):'--';document.getElementById('last-market-at').innerText=formatTime(b.lastMarketAt);document.getElementById('last-scan-at').innerText=formatTime(b.lastScanAt)}catch(e){console.error(e)}}
+async function toggleBot(){const current=document.getElementById('bot-toggle').innerText==='BOT ON';try{const r=await fetch(RENDER_SERVER_URL+'/api/bot/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:!current})});const b=await r.json();showToast('INFO',b.enabled?'Bot la aktive.':'Bot la dezaktive.');loadBotState()}catch(e){showToast('ERROR','Pa rive chanje eta bot la.')}}
 function selectTimeframe(tf){selectedInterval=tf;const label=tf==='5min'?'M5':'M1';document.getElementById('tf-m5').className=tf==='5min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400';document.getElementById('tf-m1').className=tf==='1min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400'}
 
 async function triggerAnalysis(){showToast('INFO','XAU/USD ap analize otomatikman pa bot la.');}
@@ -124,13 +132,13 @@ async function triggerAnalysis(){showToast('INFO','XAU/USD ap analize otomatikma
 function money(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 
-async function loadSignals(){const {data,error}=await supabaseClient.from('signals').select('*').order('created_at',{ascending:false}).limit(12);const c=document.getElementById('active-signals');if(error||!data||!data.length){c.innerHTML='<div class="col-span-full dark-card p-8 rounded-2xl text-center text-slate-400 font-mono text-xs">Pa gen signal pou montre kounye a.</div>';return}c.innerHTML=data.map(s=>{const buy=String(s.type).toUpperCase()==='BUY';return `<div class="dark-card rounded-2xl p-3.5 border ${buy?'border-emerald-500/40':'border-red-500/40'}"><div class="flex justify-between mb-2"><div><h3 class="font-black font-mono">${esc(s.pair)}</h3><span class="text-[10px] text-slate-400 font-mono">${esc(s.timeframe||'5min')}</span></div><span class="text-[10px] font-mono font-bold px-2 py-1 rounded border ${buy?'bg-emerald-500/20 text-emerald-400 border-emerald-500/40':'bg-red-500/20 text-red-400 border-red-500/40'}">${esc(s.type)}</span></div><div class="space-y-1 font-mono text-xs bg-black/80 p-2.5 rounded-xl border border-white/10"><div class="flex justify-between"><span class="text-slate-400">Entry</span><b>${esc(s.entry_price)}</b></div><div class="flex justify-between"><span class="text-slate-400">TP1</span><b class="text-emerald-400">${esc(s.tp1)}</b></div><div class="flex justify-between"><span class="text-slate-400">SL</span><b class="text-red-400">${esc(s.sl)}</b></div></div><div class="mt-2 text-[9px] text-emerald-400 font-mono">PAPER • NO BROKER ORDER</div></div>`}).join('')}
+async function loadSignals(){try{const r=await fetch(RENDER_SERVER_URL+'/api/signals');const j=await r.json();const data=j.signals||[];const error=j.success?null:j.error;const c=document.getElementById('active-signals');if(error||!data||!data.length){c.innerHTML='<div class="col-span-full dark-card p-8 rounded-2xl text-center text-slate-400 font-mono text-xs">Pa gen signal pou montre kounye a.</div>';return}c.innerHTML=data.map(s=>{const buy=String(s.type).toUpperCase()==='BUY';return `<div class="dark-card rounded-2xl p-3.5 border ${buy?'border-emerald-500/40':'border-red-500/40'}"><div class="flex justify-between mb-2"><div><h3 class="font-black font-mono">${esc(s.pair)}</h3><span class="text-[10px] text-slate-400 font-mono">${esc(s.timeframe||'5min')}</span></div><span class="text-[10px] font-mono font-bold px-2 py-1 rounded border ${buy?'bg-emerald-500/20 text-emerald-400 border-emerald-500/40':'bg-red-500/20 text-red-400 border-red-500/40'}">${esc(s.type)}</span></div><div class="space-y-1 font-mono text-xs bg-black/80 p-2.5 rounded-xl border border-white/10"><div class="flex justify-between"><span class="text-slate-400">Entry</span><b>${esc(s.entry_price)}</b></div><div class="flex justify-between"><span class="text-slate-400">TP1</span><b class="text-emerald-400">${esc(s.tp1)}</b></div><div class="flex justify-between"><span class="text-slate-400">SL</span><b class="text-red-400">${esc(s.sl)}</b></div></div><div class="mt-2 text-[9px] text-emerald-400 font-mono">PAPER • NO BROKER ORDER</div></div>`}).join('')}
 
 async function refreshDashboard(){try{const r=await fetch(RENDER_SERVER_URL+'/api/paper/state'),s=await r.json();document.getElementById('balance').innerText=money(s.balance);document.getElementById('equity').innerText=money(s.equity);const pnl=document.getElementById('pnl');pnl.innerText=money(s.realizedPnL);pnl.className='text-xl font-black font-mono mt-1 '+(s.realizedPnL>=0?'text-emerald-400':'text-red-400');document.getElementById('position-count').innerText=s.openPositions.length;document.getElementById('positions').innerHTML=s.openPositions.length?s.openPositions.map(p=>`<div class="dark-card rounded-2xl p-4 border ${p.type==='BUY'?'border-emerald-500/40':'border-red-500/40'}"><div class="flex justify-between"><b class="font-mono">${esc(p.pair)}</b><span class="font-mono text-xs ${p.type==='BUY'?'text-emerald-400':'text-red-400'}">${esc(p.type)}</span></div><div class="grid grid-cols-2 gap-2 mt-3 text-xs font-mono"><span class="text-slate-400">Entry <b class="text-white">${esc(p.entry_price)}</b></span><span class="text-slate-400">Current P/L <b class="${p.unrealizedPnL>=0?'text-emerald-400':'text-red-400'}">${money(p.unrealizedPnL)}</b></span><span class="text-slate-400">TP1 <b class="text-emerald-400">${esc(p.tp1)}</b></span><span class="text-slate-400">SL <b class="text-red-400">${esc(p.sl)}</b></span></div></div>`).join(''):'<div class="col-span-full dark-card p-6 rounded-2xl text-center text-slate-400 font-mono text-xs">Pa gen position ouvè.</div>';document.getElementById('history').innerHTML=s.trades.length?s.trades.map(t=>`<tr class="border-t border-white/5"><td class="p-3">${esc(t.pair)}</td><td>${esc(t.type)}</td><td>${esc(t.entry_price)}</td><td>${esc(t.exit_price)}</td><td class="${t.realizedPnL>=0?'text-emerald-400':'text-red-400'}">${money(t.realizedPnL)}</td><td>${esc(t.closeReason)}</td></tr>`).join(''):'<tr><td colspan="6" class="p-5 text-center text-slate-500">Pa gen trade fèmen.</td></tr>'}catch(e){console.error(e)}}
 
 async function resetPaper(){if(!confirm('Reset paper account la pou $10,000?'))return;await fetch(RENDER_SERVER_URL+'/api/paper/reset',{method:'POST',headers:{'Content-Type':'application/json'}});showToast('INFO','Paper account reset.');refreshDashboard()}
 supabaseClient.channel('paper-signals').on('postgres_changes',{event:'INSERT',schema:'public',table:'signals'},payload=>{showToast('SUCCESS',`Nouvo ${payload.new.type} signal: ${payload.new.pair}`);loadSignals();refreshDashboard()}).subscribe();
-loadSignals();refreshDashboard();setInterval(refreshDashboard,15000);setInterval(loadSignals,30000);
+loadSignals();refreshDashboard();loadBotState();setInterval(refreshDashboard,15000);setInterval(loadSignals,30000);setInterval(loadBotState,15000);
 </script>
 </body>
 </html>
