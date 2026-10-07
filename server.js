@@ -10,6 +10,7 @@ app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 const TRADING_MODE = 'paper';
+const botControl = { enabled: true, lastScanAt: null, lastPrice: null, lastMarketAt: null, lastMessage: 'Bot la aktive.' };
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -96,6 +97,12 @@ function normalizeAnalysis(analysis, symbol, interval) {
 
 async function analyzeMarket(symbol, interval = '5min') {
   const candleData = await getMarketData('XAUUSD', interval, 30);
+  const latestCandle = candleData?.[0];
+  if (latestCandle) {
+    botControl.lastPrice = Number(latestCandle.close);
+    botControl.lastMarketAt = latestCandle.datetime || new Date().toISOString();
+  }
+  botControl.lastScanAt = new Date().toISOString();
 
   if (!hasMarketVolatility(symbol, candleData)) {
     return { success: true, message: 'Mache a kalm. Pa gen siyal.', signal: null };
@@ -260,6 +267,30 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/api/bot/state', (req, res) => {
+  res.json({
+    enabled: botControl.enabled,
+    mode: TRADING_MODE,
+    symbol: 'XAUUSD',
+    lastScanAt: botControl.lastScanAt,
+    lastPrice: botControl.lastPrice,
+    lastMarketAt: botControl.lastMarketAt,
+    message: botControl.lastMessage,
+  });
+});
+
+app.post('/api/bot/toggle', (req, res) => {
+  botControl.enabled = Boolean(req.body?.enabled);
+  botControl.lastMessage = botControl.enabled ? 'Bot la aktive.' : 'Bot la dezaktive.';
+  console.log(`[PAPER BOT] ${botControl.enabled ? 'ENABLED' : 'DISABLED'} by dashboard`);
+  res.json({
+    enabled: botControl.enabled,
+    mode: TRADING_MODE,
+    symbol: 'XAUUSD',
+    message: botControl.lastMessage,
+  });
+});
+
 app.get('/api/config', (req, res) => {
   res.json({
     mode: TRADING_MODE,
@@ -270,7 +301,8 @@ app.get('/api/config', (req, res) => {
 });
 
 app.get('/api/analyze/:symbol', async (req, res) => {
-  const symbol = req.params.symbol.toUpperCase();
+  if (!botControl.enabled) return res.status(423).json({ success: false, error: 'Bot la OFF.' });
+  const symbol = 'XAUUSD';
   const interval = req.query.interval || '5min';
 
   try {
@@ -313,6 +345,10 @@ app.post('/api/paper/reset', (req, res) => {
 
 // This automation only creates PAPER signals/positions. It can never place broker orders.
 cron.schedule('*/5 * * * *', async () => {
+  if (!botControl.enabled) {
+    console.log('[PAPER CRON] Bot OFF — scan skipped.');
+    return;
+  }
   console.log('[PAPER CRON] Automatic XAUUSD analysis...');
   try {
     const result = await analyzeMarket('XAUUSD', '5min');
