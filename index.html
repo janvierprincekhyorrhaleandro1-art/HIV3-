@@ -50,10 +50,15 @@ body{background:#000;color:#fff;overflow-x:hidden}
 </div>
 <div id="scan-status" class="hidden font-mono text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-lg animate-pulse">Ap analize mache a...</div>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-<button onclick="triggerAnalysis('XAUUSD')" class="p-3 rounded-xl bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/50 font-mono text-xs font-bold transition-all flex justify-between"><span>Scan XAUUSD (Lò)</span><span id="badge-xau" class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">M5</span></button>
-<button onclick="triggerAnalysis('EURUSD')" class="p-3 rounded-xl bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/50 font-mono text-xs font-bold transition-all flex justify-between"><span>Scan EUR/USD</span><span id="badge-eur" class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">M5</span></button>
-<button onclick="triggerAnalysis('GBPUSD')" class="p-3 rounded-xl bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/50 font-mono text-xs font-bold transition-all flex justify-between"><span>Scan GBP/USD</span><span id="badge-gbp" class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">M5</span></button>
+<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-center justify-between gap-4">
+  <div>
+    <p class="text-xs font-bold font-mono text-emerald-400">AUTO XAU/USD MONITOR</p>
+    <p class="text-[11px] text-slate-400 mt-1">Bot la ap analize Gold otomatikman. Ou pa bezwen peze Scan.</p>
+  </div>
+  <div class="flex items-center gap-2 text-[10px] font-mono">
+    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+    <span class="text-emerald-400 font-bold">AUTO ON</span>
+  </div>
 </div>
 </section>
 
@@ -112,9 +117,9 @@ function showToast(type,message){const c=document.getElementById('toast-containe
 function requestNotificationPermission(){if('Notification'in window)Notification.requestPermission().then(p=>showToast(p==='granted'?'SUCCESS':'INFO',p==='granted'?'Notifikasyon aktive.':'Notifikasyon pa aktive.'))}
 function sendBrowserNotification(title,body){if('Notification'in window&&Notification.permission==='granted')new Notification(title,{body})}
 
-function selectTimeframe(tf){selectedInterval=tf;const label=tf==='5min'?'M5':'M1';['xau','eur','gbp'].forEach(x=>document.getElementById('badge-'+x).innerText=label);document.getElementById('tf-m5').className=tf==='5min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400';document.getElementById('tf-m1').className=tf==='1min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400'}
+function selectTimeframe(tf){selectedInterval=tf;const label=tf==='5min'?'M5':'M1';document.getElementById('tf-m5').className=tf==='5min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400';document.getElementById('tf-m1').className=tf==='1min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400'}
 
-async function triggerAnalysis(symbol){document.getElementById('scan-status').classList.remove('hidden');try{const r=await fetch(`${RENDER_SERVER_URL}/api/analyze/${symbol}?interval=${selectedInterval}`),result=await r.json();if(result.signal){showToast('SUCCESS',`Nouvo ${result.signal.type} signal sou ${symbol} — paper position ouvè.`);sendBrowserNotification('Nouvo paper signal',`${symbol} ${result.signal.type}`)}else showToast('INFO',result.message||result.error||'Pa gen signal.');await refreshDashboard()}catch(e){showToast('ERROR','Sèvè Paper Trading pa disponib.')}finally{document.getElementById('scan-status').classList.add('hidden')}}
+async function triggerAnalysis(){showToast('INFO','XAU/USD ap analize otomatikman pa bot la.');}
 
 function money(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -125,7 +130,7 @@ async function refreshDashboard(){try{const r=await fetch(RENDER_SERVER_URL+'/ap
 
 async function resetPaper(){if(!confirm('Reset paper account la pou $10,000?'))return;await fetch(RENDER_SERVER_URL+'/api/paper/reset',{method:'POST',headers:{'Content-Type':'application/json'}});showToast('INFO','Paper account reset.');refreshDashboard()}
 supabaseClient.channel('paper-signals').on('postgres_changes',{event:'INSERT',schema:'public',table:'signals'},payload=>{showToast('SUCCESS',`Nouvo ${payload.new.type} signal: ${payload.new.pair}`);loadSignals();refreshDashboard()}).subscribe();
-loadSignals();refreshDashboard();setInterval(refreshDashboard,30000);setInterval(loadSignals,30000);
+loadSignals();refreshDashboard();setInterval(refreshDashboard,15000);setInterval(loadSignals,30000);
 </script>
 </body>
 </html>
