@@ -95,7 +95,7 @@ function normalizeAnalysis(analysis, symbol, interval) {
 }
 
 async function analyzeMarket(symbol, interval = '5min') {
-  const candleData = await getMarketData(symbol, interval, 30);
+  const candleData = await getMarketData('XAUUSD', interval, 30);
 
   if (!hasMarketVolatility(symbol, candleData)) {
     return { success: true, message: 'Mache a kalm. Pa gen siyal.', signal: null };
@@ -144,7 +144,7 @@ Pa envante done ki pa nan candles yo. Si risk la pa klè, pa bay signal.
   const responseText = completion.choices?.[0]?.message?.content?.trim() || '';
   const cleanJson = responseText.replace(/\`\`\`json|\`\`\`/g, '').trim();
   const analysis = JSON.parse(cleanJson);
-  const signal = normalizeAnalysis(analysis, symbol, interval);
+  const signal = normalizeAnalysis(analysis, 'XAUUSD', interval);
 
   if (!signal) return { success: true, message: 'Pa gen setup ki ase klè.', signal: null };
 
@@ -264,7 +264,7 @@ app.get('/api/config', (req, res) => {
   res.json({
     mode: TRADING_MODE,
     realTradingEnabled: false,
-    supportedSymbols: ['XAUUSD', 'EURUSD', 'GBPUSD'],
+    supportedSymbols: ['XAUUSD'],
     timeframes: ['1min', '5min'],
   });
 });
@@ -312,8 +312,8 @@ app.post('/api/paper/reset', (req, res) => {
 });
 
 // This automation only creates PAPER signals/positions. It can never place broker orders.
-cron.schedule('*/7 * * * *', async () => {
-  console.log('[PAPER CRON] XAUUSD analysis...');
+cron.schedule('*/5 * * * *', async () => {
+  console.log('[PAPER CRON] Automatic XAUUSD analysis...');
   try {
     const result = await analyzeMarket('XAUUSD', '5min');
     if (result.signal) openPaperPosition(result.signal);
@@ -324,5 +324,5 @@ cron.schedule('*/7 * * * *', async () => {
 });
 
 app.listen(PORT, () => {
-  console.log(`HIV3 Paper Trading API running on port ${PORT}. Real trading: DISABLED.`);
+  console.log(`HIV3 Paper Trading API running on port ${PORT}. AUTO XAU/USD PAPER MODE. Real trading: DISABLED.`);
 });
