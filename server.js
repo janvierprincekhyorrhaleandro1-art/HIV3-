@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 const TRADING_MODE = 'paper';
 const botControl = { enabled: true, lastScanAt: null, lastPrice: null, lastMarketAt: null, lastMessage: 'Bot la aktive.' };
 
-const supabase = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = process.env.SUPABASE_ENABLED === 'true' && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   : null;
 
@@ -22,6 +22,8 @@ const bazaarlink = process.env.BAZAARLINK_API_KEY
   : null;
 
 const TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY;
+const marketDataCache = new Map();
+const MARKET_DATA_CACHE_MS = 5 * 60 * 1000;
 
 const paperAccount = { initialBalance: 10000, balance: 10000, equity: 10000, realizedPnL: 0, positions: [], trades: [], lastResetAt: new Date().toISOString() };
 const signalHistory = [];
@@ -52,9 +54,13 @@ function fetchJson(url) {
 async function getMarketData(symbol, interval = '5min', outputsize = 30) {
   if (!TWELVE_DATA_KEY) throw new Error('TWELVE_DATA_API_KEY pa konfigire.');
   const formattedSymbol = normalizeSymbol(symbol);
+  const cacheKey = `${formattedSymbol}|${interval}|${outputsize}`;
+  const cached = marketDataCache.get(cacheKey);
+  if (cached && Date.now() - cached.savedAt < MARKET_DATA_CACHE_MS) return cached.values;
   const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(formattedSymbol)}&interval=${encodeURIComponent(interval)}&outputsize=${outputsize}&apikey=${encodeURIComponent(TWELVE_DATA_KEY)}`;
   const data = await fetchJson(url);
   if (data.status === 'error' || !Array.isArray(data.values)) throw new Error(data.message || 'Twelve Data pa retounen candles.');
+  marketDataCache.set(cacheKey, { savedAt: Date.now(), values: data.values });
   return data.values;
 }
 
@@ -142,7 +148,7 @@ function calculatePnL(position, exitPrice) { return (exitPrice - position.entry_
 function openPaperPosition(signal) {
   const existing = paperAccount.positions.find(p => p.status === 'OPEN' && p.pair === signal.pair);
   if (existing) return { created: false, position: existing };
-  const position = { id: `paper_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, pair: signal.pair, type: signal.type, entry_price: Number(signal.entry_price), tp1: Number(signal.tp1), tp2: signal.tp2 ? Number(signal.tp2) : null, sl: Number(signal.sl), timeframe: signal.timeframe, units: 1000, openedAt: new Date().toISOString(), status: 'OPEN', unrealizedPnL: 0 };
+  const position = { id: `paper_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, pair: signal.pair, type: signal.type, entry_price: Number(signal.entry_price), tp1: Number(signal.tp1), tp2: signal.tp2 ? Number(signal.tp2) : null, sl: Number(signal.sl), timeframe: signal.timeframe, units: 1, openedAt: new Date().toISOString(), status: 'OPEN', unrealizedPnL: 0 };
   paperAccount.positions.push(position);
   return { created: true, position };
 }
@@ -180,7 +186,21 @@ function getPaperState() {
   return { mode: TRADING_MODE, initialBalance: 10000, balance: Number(paperAccount.balance.toFixed(2)), equity: Number(paperAccount.equity.toFixed(2)), realizedPnL: Number(paperAccount.realizedPnL.toFixed(2)), openPositions, trades: paperAccount.trades.slice(-50).reverse(), lastResetAt: paperAccount.lastResetAt };
 }
 
-app.get('/api/health', (req,res) => res.json({ ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine', supabaseConfigured:Boolean(supabase), marketDataConfigured:Boolean(TWELVE_DATA_KEY), aiConfigured:Boolean(bazaarlink), timestamp:new Date().toISOString() }));
+app.get('/api/health', (req,res) => res.json({ ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine', supabaseConfigured:Boolean(supabase), marketDataConfigured:Boolean(TWELVE_DATA_KEY), aiConfigured:Boolean(bazaarlink), marketDataCacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false, timestamp:new Date().toISOString() }));
+app.get('/api/market-data/status', async (req,res) => {
+  if (!TWELVE_DATA_KEY) return res.status(503).json({ ok:false, configured:false, provider:'Twelve Data', error:'TWELVE_DATA_API_KEY pa konfigire sou Render.', realTradingEnabled:false });
+  try {
+    const candles = await getMarketData('XAUUSD','5min',2);
+    const latest = candles[0];
+    if (!latest || !Number.isFinite(Number(latest.close))) throw new Error('Twelve Data pa retounen yon pri XAU/USD ki valab.');
+    botControl.lastPrice = Number(latest.close);
+    botControl.lastMarketAt = latest.datetime || new Date().toISOString();
+    return res.json({ ok:true, configured:true, provider:'Twelve Data', symbol:'XAU/USD', price:botControl.lastPrice, marketTime:botControl.lastMarketAt, interval:'5min', cacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false });
+  } catch (err) {
+    console.error('[MARKET DATA STATUS]', err.message);
+    return res.status(502).json({ ok:false, configured:true, provider:'Twelve Data', error:err.message, realTradingEnabled:false });
+  }
+});
 app.get('/api/signals', async (req,res) => {
   if (supabase) {
     try {
