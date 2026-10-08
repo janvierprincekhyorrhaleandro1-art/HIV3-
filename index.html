@@ -59,7 +59,8 @@ body{background:#000;color:#fff;overflow-x:hidden}
     <p id="bot-message" class="text-[11px] text-slate-400 mt-1">Bot la ap analize Gold otomatikman chak 5 minit.</p>
     <div class="flex flex-wrap gap-3 mt-3 text-[10px] font-mono">
       <span>PRICE <b id="live-xau-price" class="text-white">--</b></span>
-      <span>LAST MARKET <b id="last-market-at" class="text-slate-300">--</b></span>
+      <span>MARKET TIME <b id="last-market-at" class="text-slate-300">--</b></span>
+      <span>LAST CHECK <b id="price-checked-at" class="text-slate-300">--</b></span>
       <span>LAST SCAN <b id="last-scan-at" class="text-slate-300">--</b></span>
     </div>
   </div>
@@ -95,7 +96,7 @@ body{background:#000;color:#fff;overflow-x:hidden}
 <div class="dark-card rounded-2xl overflow-hidden">
 <div class="overflow-x-auto">
 <table class="w-full text-left font-mono text-[11px]">
-<thead class="bg-white/5 text-slate-400"><tr><th class="p-3">PAIR</th><th>TYPE</th><th>ENTRY</th><th>EXIT</th><th>P/L</th><th>REASON</th></tr></thead>
+<thead class="bg-white/5 text-slate-400"><tr><th class="p-3">PAIR</th><th>TYPE</th><th>ENTRY</th><th>EXIT</th><th>P/L</th><th>STATUS</th><th>REASON</th></tr></thead>
 <tbody id="history"></tbody>
 </table>
 </div>
@@ -129,18 +130,36 @@ async function loadBotState(){
     btn.className=b.enabled?'min-w-[118px] px-4 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500 text-black text-xs font-black font-mono hover:bg-emerald-400 transition':'min-w-[118px] px-4 py-2.5 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 text-xs font-black font-mono hover:bg-red-500/20 transition';
     badge.innerText=b.enabled?'AUTO ON':'AUTO OFF';
     document.getElementById('bot-message').innerText=b.enabled?'Bot la ap analize Gold otomatikman chak 5 minit.':'Bot la OFF. Li pap fè nouvo scan oswa ouvri nouvo paper position.';
-    document.getElementById('live-xau-price').innerText=b.lastPrice?Number(b.lastPrice).toFixed(2):'--';
-    document.getElementById('last-market-at').innerText=formatTime(b.lastMarketAt);
+    if(!document.getElementById('live-xau-price').dataset.marketLoaded){document.getElementById('live-xau-price').innerText=b.lastPrice?Number(b.lastPrice).toFixed(2):'--';}
+    if(!document.getElementById('last-market-at').dataset.marketLoaded)document.getElementById('last-market-at').innerText=formatTime(b.lastMarketAt);
     document.getElementById('last-scan-at').innerText=formatTime(b.lastScanAt);
   }catch(e){
     console.error('Bot state error:',e);
     document.getElementById('bot-message').innerText='API Render pa reponn. Eta bot la poko verifye.';
     document.getElementById('bot-badge').innerText='API OFFLINE';
-    document.getElementById('live-xau-price').innerText='--';
-    document.getElementById('last-market-at').innerText='--';
+    if(!document.getElementById('live-xau-price').dataset.marketLoaded)document.getElementById('live-xau-price').innerText='--';
+    if(!document.getElementById('last-market-at').dataset.marketLoaded)document.getElementById('last-market-at').innerText='--';
     document.getElementById('last-scan-at').innerText='--';
   }
 }
+async function loadMarketPrice(){
+  try{
+    const r=await fetch(RENDER_SERVER_URL+'/api/market-data/status',{cache:'no-store'});
+    const d=await r.json();
+    if(!r.ok||!d.ok||!Number.isFinite(Number(d.price)))throw new Error(d.error||'Market price pa disponib');
+    const price=document.getElementById('live-xau-price');
+    price.innerText=Number(d.price).toFixed(2);
+    price.dataset.marketLoaded='true';
+    const marketTime=document.getElementById('last-market-at');
+    marketTime.innerText=formatTime(d.marketTime);
+    marketTime.dataset.marketLoaded='true';
+    document.getElementById('price-checked-at').innerText=formatTime(new Date().toISOString());
+  }catch(e){
+    console.error('Market price error:',e);
+    document.getElementById('price-checked-at').innerText='API ERROR';
+  }
+}
+
 async function toggleBot(){const current=document.getElementById('bot-toggle').innerText==='BOT ON';try{const r=await fetch(RENDER_SERVER_URL+'/api/bot/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:!current})});const b=await r.json();showToast('INFO',b.enabled?'Bot la aktive.':'Bot la dezaktive.');loadBotState()}catch(e){showToast('ERROR','Pa rive chanje eta bot la.')}}
 function selectTimeframe(tf){selectedInterval=tf;const label=tf==='5min'?'M5':'M1';document.getElementById('tf-m5').className=tf==='5min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400';document.getElementById('tf-m1').className=tf==='1min'?'px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-black':'px-2.5 py-1 rounded-md text-slate-400'}
 
@@ -182,7 +201,13 @@ async function refreshDashboard(){
     pnl.className='text-xl font-black font-mono mt-1 '+(s.realizedPnL>=0?'text-emerald-400':'text-red-400');
     document.getElementById('position-count').innerText=s.openPositions.length;
     document.getElementById('positions').innerHTML=s.openPositions.length?s.openPositions.map(p=>`<div class="dark-card rounded-2xl p-4 border ${p.type==='BUY'?'border-emerald-500/40':'border-red-500/40'}"><div class="flex justify-between"><b class="font-mono">${esc(p.pair)}</b><span class="font-mono text-xs ${p.type==='BUY'?'text-emerald-400':'text-red-400'}">${esc(p.type)}</span></div><div class="grid grid-cols-2 gap-2 mt-3 text-xs font-mono"><span class="text-slate-400">Entry <b class="text-white">${esc(p.entry_price)}</b></span><span class="text-slate-400">Current P/L <b class="${p.unrealizedPnL>=0?'text-emerald-400':'text-red-400'}">${money(p.unrealizedPnL)}</b></span><span class="text-slate-400">TP1 <b class="text-emerald-400">${esc(p.tp1)}</b></span><span class="text-slate-400">SL <b class="text-red-400">${esc(p.sl)}</b></span></div></div>`).join(''):'<div class="col-span-full dark-card p-6 rounded-2xl text-center text-slate-400 font-mono text-xs">Pa gen position ouvè.</div>';
-    document.getElementById('history').innerHTML=s.trades.length?s.trades.map(t=>`<tr class="border-t border-white/5"><td class="p-3">${esc(t.pair)}</td><td>${esc(t.type)}</td><td>${esc(t.entry_price)}</td><td>${esc(t.exit_price)}</td><td class="${t.realizedPnL>=0?'text-emerald-400':'text-red-400'}">${money(t.realizedPnL)}</td><td>${esc(t.closeReason)}</td></tr>`).join(''):'<tr><td colspan="6" class="p-5 text-center text-slate-500">Pa gen trade fèmen.</td></tr>';
+    const historyRows=[
+      ...s.openPositions.map(t=>({ ...t, historyStatus:'OPEN', historyPnL:t.unrealizedPnL, historyExit:'—', historyReason:'Pozisyon toujou ouvè' })),
+      ...s.trades.map(t=>({ ...t, historyStatus:'CLOSED', historyPnL:t.realizedPnL, historyExit:t.exit_price, historyReason:t.closeReason||'Fèmen' }))
+    ];
+    document.getElementById('history').innerHTML=historyRows.length?historyRows.map(t=>
+      '<tr class="border-t border-white/5"><td class="p-3">'+esc(t.pair)+'</td><td>'+esc(t.type)+'</td><td>'+esc(t.entry_price)+'</td><td>'+esc(t.historyExit)+'</td><td class="'+(Number(t.historyPnL)>=0?'text-emerald-400':'text-red-400')+'">'+money(t.historyPnL)+'</td><td><span class="'+(t.historyStatus==='OPEN'?'text-emerald-400':'text-slate-300')+'">'+t.historyStatus+'</span></td><td>'+esc(t.historyReason)+'</td></tr>'
+    ).join(''):'<tr><td colspan="7" class="p-5 text-center text-slate-500">Pa gen trade pou montre ankò.</td></tr>';
   }catch(e){
     console.error('Paper state error:',e);
     document.getElementById('balance').innerText='API ERROR';
@@ -203,7 +228,7 @@ async function resetPaper(){
   }catch(e){showToast('ERROR','Pa rive reset simulation an: API Render pa reponn.');}
 }
 
-loadSignals();refreshDashboard();loadBotState();setInterval(refreshDashboard,15000);setInterval(loadSignals,30000);setInterval(loadBotState,15000);
+loadSignals();refreshDashboard();loadBotState();loadMarketPrice();setInterval(refreshDashboard,15000);setInterval(loadSignals,30000);setInterval(loadBotState,15000);setInterval(loadMarketPrice,15000);
 </script>
 </body>
 </html>
