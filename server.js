@@ -166,7 +166,7 @@ Si pa gen setup klè, retounen {"has_signal":false}. Sinon retounen sèlman yon 
         temperature: 0.2
       });
       const responseText = completion.choices?.[0]?.message?.content?.trim() || '';
-      const clean = responseText.replace(/\`\`\`json|\`\`\`/g, '').trim();
+      const clean = responseText.replace(/[\u0060]{3}json|[\u0060]{3}/g, '').trim();
       const parsed = JSON.parse(clean);
       aiProviderUsed = provider.name;
 
