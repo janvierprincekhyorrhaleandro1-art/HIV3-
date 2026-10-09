@@ -11,7 +11,7 @@ app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 const TRADING_MODE = 'paper';
-const botControl = { enabled: true, lastScanAt: null, lastPrice: null, lastMarketAt: null, lastMessage: 'Bot la aktive.' };
+const botControl = { enabled: false, lastScanAt: null, lastPrice: null, lastMarketAt: null, lastMessage: 'Bot la OFF. Aktive l sèlman lè ou vle.' };
 
 const supabase = process.env.SUPABASE_ENABLED === 'true' && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
@@ -49,10 +49,81 @@ const TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY;
 const marketDataCache = new Map();
 const MARKET_DATA_CACHE_MS = 5 * 60 * 1000;
 
-const paperAccount = { initialBalance: 10000, balance: 10000, equity: 10000, realizedPnL: 0, positions: [], trades: [], lastResetAt: new Date().toISOString() };
+const STARTING_BALANCE = 100;
+const paperAccount = { initialBalance: STARTING_BALANCE, balance: STARTING_BALANCE, equity: STARTING_BALANCE, realizedPnL: 0, positions: [], trades: [], lastResetAt: new Date().toISOString() };
 const signalHistory = [];
 
-function normalizeSymbol(symbol) {
+let persistenceReady = false;
+function dbPosition(p) {
+  return { id:p.id, pair:p.pair, type:p.type, entry_price:p.entry_price, tp1:p.tp1, tp2:p.tp2 ?? null, sl:p.sl,
+    timeframe:p.timeframe || '5min', units:p.units || 1, opened_at:p.openedAt || p.opened_at || new Date().toISOString(),
+    status:p.status || 'OPEN', unrealized_pnl:p.unrealizedPnL || 0, exit_price:p.exit_price ?? null,
+    closed_at:p.closedAt || p.closed_at || null, close_reason:p.closeReason || p.close_reason || null,
+    realized_pnl:p.realizedPnL ?? p.realized_pnl ?? null, updated_at:new Date().toISOString() };
+}
+function appPosition(r) {
+  return { id:r.id, pair:r.pair, type:r.type, entry_price:Number(r.entry_price), tp1:Number(r.tp1),
+    tp2:r.tp2 == null ? null : Number(r.tp2), sl:Number(r.sl), timeframe:r.timeframe || '5min',
+    units:Number(r.units || 1), openedAt:r.opened_at, status:r.status, unrealizedPnL:Number(r.unrealized_pnl || 0),
+    exit_price:r.exit_price == null ? null : Number(r.exit_price), closedAt:r.closed_at,
+    closeReason:r.close_reason, realizedPnL:r.realized_pnl == null ? null : Number(r.realized_pnl) };
+}
+async function persistBotEnabled(enabled) {
+  if (!supabase) return false;
+  const {error}=await supabase.from('bot_settings').upsert({id:'main',enabled:Boolean(enabled),updated_at:new Date().toISOString()},{onConflict:'id'});
+  if(error) throw error;
+  return true;
+}
+async function persistPaperState() {
+  if (!supabase) return false;
+  const open=paperAccount.positions.filter(p=>p.status==='OPEN');
+  paperAccount.equity=paperAccount.balance+open.reduce((sum,p)=>sum+(p.unrealizedPnL||0),0);
+  const {error:ae}=await supabase.from('paper_accounts').upsert({id:1,initial_balance:paperAccount.initialBalance,balance:paperAccount.balance,equity:paperAccount.equity,realized_pnl:paperAccount.realizedPnL,last_reset_at:paperAccount.lastResetAt,updated_at:new Date().toISOString()},{onConflict:'id'});
+  if(ae) throw ae;
+  if(paperAccount.positions.length) {
+    const {error:pe}=await supabase.from('paper_positions').upsert(paperAccount.positions.map(dbPosition),{onConflict:'id'});
+    if(pe) throw pe;
+  }
+  return true;
+}
+async function initializePersistentState() {
+  if(!supabase) {
+    console.error('[SUPABASE] Persistence NOT configured. Set SUPABASE_ENABLED=true, SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Render.');
+    botControl.enabled=false; botControl.lastMessage='Bot OFF: sovgad Supabase pa konekte.'; return;
+  }
+  try {
+    const [{data:settings,error:se},{data:account,error:ae},{data:rows,error:pe}]=await Promise.all([
+      supabase.from('bot_settings').select('*').eq('id','main').maybeSingle(),
+      supabase.from('paper_accounts').select('*').eq('id',1).maybeSingle(),
+      supabase.from('paper_positions').select('*').order('opened_at',{ascending:true})
+    ]);
+    if(se) throw se; if(ae) throw ae; if(pe) throw pe;
+    if(!settings) {
+      const {error}=await supabase.from('bot_settings').insert({id:'main',enabled:false});
+      if(error) throw error;
+      botControl.enabled=false;
+    } else botControl.enabled=settings.enabled===true;
+    if(!account) {
+      paperAccount.initialBalance=STARTING_BALANCE; paperAccount.balance=STARTING_BALANCE;
+      paperAccount.equity=STARTING_BALANCE; paperAccount.realizedPnL=0;
+      paperAccount.positions=[]; paperAccount.trades=[]; paperAccount.lastResetAt=new Date().toISOString();
+      await persistPaperState();
+    } else {
+      paperAccount.initialBalance=Number(account.initial_balance); paperAccount.balance=Number(account.balance);
+      paperAccount.equity=Number(account.equity); paperAccount.realizedPnL=Number(account.realized_pnl);
+      paperAccount.lastResetAt=account.last_reset_at; paperAccount.positions=(rows||[]).map(appPosition);
+      paperAccount.trades=paperAccount.positions.filter(p=>p.status==='CLOSED').sort((a,b)=>new Date(b.closedAt||0)-new Date(a.closedAt||0)).slice(0,200);
+    }
+    persistenceReady=true;
+    botControl.lastMessage=botControl.enabled?'Bot ON. Eta chaje nan Supabase.':'Bot OFF. Eta chaje nan Supabase.';
+    console.log('[SUPABASE] Bot settings, paper account and trade history loaded.');
+  } catch(err) {
+    persistenceReady=false; botControl.enabled=false; botControl.lastMessage='Bot OFF: Supabase pa kapab chaje sovgad la.';
+    console.error('[SUPABASE INIT ERROR]',err.message);
+  }
+}
+
+function normalizeSymbol(symbol)
   const clean = String(symbol).toUpperCase().replace('/', '');
   if (clean === 'XAUUSD') return 'XAU/USD';
   if (clean.length === 6) return clean.slice(0, 3) + '/' + clean.slice(3);
@@ -206,11 +277,12 @@ Si pa gen setup klè, retounen {"has_signal":false}. Sinon retounen sèlman yon 
 
 function calculatePnL(position, exitPrice) { return (exitPrice - position.entry_price) * (position.type === 'BUY' ? 1 : -1) * (position.units || 1000); }
 
-function openPaperPosition(signal) {
+async function openPaperPosition(signal) {
   const existing = paperAccount.positions.find(p => p.status === 'OPEN' && p.pair === signal.pair);
   if (existing) return { created: false, position: existing };
   const position = { id: `paper_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, pair: signal.pair, type: signal.type, entry_price: Number(signal.entry_price), tp1: Number(signal.tp1), tp2: signal.tp2 ? Number(signal.tp2) : null, sl: Number(signal.sl), timeframe: signal.timeframe, units: 1, openedAt: new Date().toISOString(), status: 'OPEN', unrealizedPnL: 0 };
   paperAccount.positions.push(position);
+  try { await persistPaperState(); } catch (err) { console.error('[SUPABASE SAVE POSITION]', err.message); }
   return { created: true, position };
 }
 
@@ -238,16 +310,17 @@ async function updatePaperPositions(symbol) {
       } else position.unrealizedPnL = calculatePnL(position, close);
     } catch (err) { console.error(`Paper update ${position.pair}:`, err.message); }
   }
+  try { await persistPaperState(); } catch (err) { console.error('[SUPABASE SAVE PAPER STATE]', err.message); }
   return getPaperState();
 }
 
 function getPaperState() {
   const openPositions = paperAccount.positions.filter(p => p.status === 'OPEN');
   paperAccount.equity = paperAccount.balance + openPositions.reduce((sum, p) => sum + (p.unrealizedPnL || 0), 0);
-  return { mode: TRADING_MODE, initialBalance: 10000, balance: Number(paperAccount.balance.toFixed(2)), equity: Number(paperAccount.equity.toFixed(2)), realizedPnL: Number(paperAccount.realizedPnL.toFixed(2)), openPositions, trades: paperAccount.trades.slice(-50).reverse(), lastResetAt: paperAccount.lastResetAt };
+  return { mode: TRADING_MODE, initialBalance: paperAccount.initialBalance, balance: Number(paperAccount.balance.toFixed(2)), equity: Number(paperAccount.equity.toFixed(2)), realizedPnL: Number(paperAccount.realizedPnL.toFixed(2)), openPositions, trades: paperAccount.trades.slice(-50).reverse(), lastResetAt: paperAccount.lastResetAt };
 }
 
-app.get('/api/health', (req,res) => res.json({ ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine', supabaseConfigured:Boolean(supabase), marketDataConfigured:Boolean(TWELVE_DATA_KEY), aiConfigured:Boolean(aiProviders.length), aiProvidersConfigured:aiProviders.map(provider => provider.name), marketDataCacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false, timestamp:new Date().toISOString() }));
+app.get('/api/health', (req,res) => res.json({ ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine', supabaseConfigured:Boolean(supabase), persistenceReady, botEnabled:botControl.enabled, startingBalance:paperAccount.initialBalance, marketDataConfigured:Boolean(TWELVE_DATA_KEY), aiConfigured:Boolean(aiProviders.length), aiProvidersConfigured:aiProviders.map(provider => provider.name), marketDataCacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false, timestamp:new Date().toISOString() }));
 app.get('/api/market-data/status', async (req,res) => {
   if (!TWELVE_DATA_KEY) return res.status(503).json({ ok:false, configured:false, provider:'Twelve Data', error:'TWELVE_DATA_API_KEY pa konfigire sou Render.', realTradingEnabled:false });
   try {
@@ -273,13 +346,51 @@ app.get('/api/signals', async (req,res) => {
   res.json({success:true,signals:signalHistory.slice(0,12)});
 });
 app.get('/api/bot/state',(req,res)=>res.json({enabled:botControl.enabled,mode:TRADING_MODE,symbol:'XAUUSD',lastScanAt:botControl.lastScanAt,lastPrice:botControl.lastPrice,lastMarketAt:botControl.lastMarketAt,message:botControl.lastMessage}));
-app.post('/api/bot/toggle',(req,res)=>{botControl.enabled=Boolean(req.body?.enabled);botControl.lastMessage=botControl.enabled?'Bot la aktive.':'Bot la dezaktive.';res.json({enabled:botControl.enabled,mode:TRADING_MODE,symbol:'XAUUSD',message:botControl.lastMessage});});
+app.post('/api/bot/toggle',async(req,res)=>{
+  const desired=req.body?.enabled===true;
+  if(supabase) {
+    try {
+      await persistBotEnabled(desired); botControl.enabled=desired;
+      botControl.lastMessage=desired?'Bot la aktive; eta a sove nan Supabase.':'Bot la OFF; eta OFF la sove nan Supabase.';
+      return res.json({enabled:botControl.enabled,persisted:true,mode:TRADING_MODE,symbol:'XAUUSD',message:botControl.lastMessage});
+    } catch(err) {
+      botControl.enabled=false; botControl.lastMessage='Bot OFF: eta a pa t kapab sove nan Supabase.';
+      console.error('[SUPABASE SAVE BOT STATE]',err.message);
+      return res.status(503).json({enabled:false,persisted:false,message:botControl.lastMessage});
+    }
+  }
+  botControl.enabled=false; botControl.lastMessage='Bot OFF: Supabase pa konekte, eta a pa ka sove.';
+  return res.status(503).json({enabled:false,persisted:false,message:botControl.lastMessage});
+});
 app.get('/api/config',(req,res)=>res.json({mode:TRADING_MODE,realTradingEnabled:false,supportedSymbols:['XAUUSD'],timeframes:['1min','5min']}));
-app.get('/api/analyze/:symbol',async(req,res)=>{if(!botControl.enabled)return res.status(423).json({success:false,error:'Bot la OFF.'});try{const result=await analyzeMarket('XAUUSD',req.query.interval||'5min');if(result.signal)openPaperPosition(result.signal);res.json(result);}catch(err){console.error('[ANALYZE ERROR]',err.message);res.status(500).json({success:false,error:err.message});}});
+app.get('/api/analyze/:symbol',async(req,res)=>{if(!botControl.enabled)return res.status(423).json({success:false,error:'Bot la OFF.'});try{const result=await analyzeMarket('XAUUSD',req.query.interval||'5min');if(result.signal) await openPaperPosition(result.signal);res.json(result);}catch(err){console.error('[ANALYZE ERROR]',err.message);res.status(500).json({success:false,error:err.message});}});
 app.get('/api/paper/state',async(req,res)=>{try{await updatePaperPositions();res.json(getPaperState());}catch(err){res.status(500).json({error:err.message,...getPaperState()});}});
 app.post('/api/paper/refresh',async(req,res)=>{try{res.json(await updatePaperPositions(req.body?.symbol?.toUpperCase()));}catch(err){res.status(500).json({error:err.message,...getPaperState()});}});
-app.post('/api/paper/reset',(req,res)=>{paperAccount.balance=paperAccount.initialBalance;paperAccount.equity=paperAccount.initialBalance;paperAccount.realizedPnL=0;paperAccount.positions=[];paperAccount.trades=[];paperAccount.lastResetAt=new Date().toISOString();signalHistory.length=0;res.json(getPaperState());});
+app.post('/api/paper/reset',async(req,res)=>{
+  paperAccount.initialBalance=STARTING_BALANCE; paperAccount.balance=STARTING_BALANCE;
+  paperAccount.equity=STARTING_BALANCE; paperAccount.realizedPnL=0; paperAccount.positions=[];
+  paperAccount.trades=[]; paperAccount.lastResetAt=new Date().toISOString(); signalHistory.length=0;
+  try {
+    if(supabase) { const {error}=await supabase.from('paper_positions').delete().neq('id',''); if(error) throw error; await persistPaperState(); }
+    return res.json({...getPaperState(),persisted:Boolean(supabase)});
+  } catch(err) {
+    console.error('[SUPABASE RESET ERROR]',err.message);
+    return res.status(503).json({error:'Reset la pa t kapab sove nan Supabase.',...getPaperState(),persisted:false});
+  }
+});
 
-cron.schedule('*/5 * * * *',async()=>{if(!botControl.enabled)return console.log('[PAPER CRON] Bot OFF — scan skipped.');console.log('[PAPER CRON] Automatic XAUUSD analysis...');try{const result=await analyzeMarket('XAUUSD','5min');if(result.signal)openPaperPosition(result.signal);await updatePaperPositions('XAUUSD');console.log('[PAPER CRON] Cycle complete:',getPaperState().balance,getPaperState().equity);}catch(err){console.error('[PAPER CRON ERROR]',err.message);}});
-
-app.listen(PORT,()=>console.log(`HIV3 Paper Trading API running on port ${PORT}. AUTO XAU/USD PAPER MODE. Real trading: DISABLED.`));
+async function startServer() {
+  await initializePersistentState();
+  cron.schedule('*/5 * * * *',async()=>{
+    if(!botControl.enabled) return console.log('[PAPER CRON] Bot OFF — scan skipped.');
+    console.log('[PAPER CRON] Automatic XAUUSD analysis...');
+    try {
+      const result=await analyzeMarket('XAUUSD','5min');
+      if(result.signal) await openPaperPosition(result.signal);
+      await updatePaperPositions('XAUUSD');
+      console.log('[PAPER CRON] Cycle complete:',getPaperState().balance,getPaperState().equity);
+    } catch(err) { console.error('[PAPER CRON ERROR]',err.message); }
+  });
+  app.listen(PORT,()=>console.log('HIV3 Paper Trading API running on port '+PORT+'. PAPER MODE. Real trading: DISABLED. Starting balance: $'+STARTING_BALANCE+'. Bot enabled: '+botControl.enabled+'.'));
+}
+startServer();
