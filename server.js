@@ -123,7 +123,7 @@ async function initializePersistentState() {
   }
 }
 
-function normalizeSymbol(symbol)
+function normalizeSymbol(symbol) {
   const clean = String(symbol).toUpperCase().replace('/', '');
   if (clean === 'XAUUSD') return 'XAU/USD';
   if (clean.length === 6) return clean.slice(0, 3) + '/' + clean.slice(3);
