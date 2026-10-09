@@ -164,7 +164,8 @@ Si pa gen setup klè, retounen {"has_signal":false}. Sinon retounen sèlman yon 
         baseURL: provider.baseURL,
         apiKey: provider.apiKey,
         timeout: 20000,
-        maxRetries: 0
+        maxRetries: 0,
+        defaultHeaders: provider.name === 'BazaarLink' ? { 'X-Free-Fallback': 'false' } : {}
       });
       const completion = await client.chat.completions.create({
         model: provider.model,
