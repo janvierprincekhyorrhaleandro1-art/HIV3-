@@ -17,9 +17,27 @@ const supabase = process.env.SUPABASE_ENABLED === 'true' && process.env.SUPABASE
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   : null;
 
-const bazaarlink = process.env.BAZAARLINK_API_KEY
-  ? new OpenAI({ baseURL: 'https://api.bazaarlink.ai/v1', apiKey: process.env.BAZAARLINK_API_KEY })
-  : null;
+// AI provider failover: Gemini primary, Groq then OpenRouter.
+const aiProviders = [
+  {
+    name: 'Gemini',
+    apiKey: process.env.GEMINI_API_KEY,
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
+  },
+  {
+    name: 'Groq',
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: 'https://api.groq.com/openai/v1',
+    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+  },
+  {
+    name: 'OpenRouter',
+    apiKey: process.env.OPENROUTER_API_KEY,
+    baseURL: 'https://openrouter.ai/api/v1',
+    model: process.env.OPENROUTER_MODEL || 'openrouter/free'
+  }
+].filter(provider => Boolean(provider.apiKey));
 
 const TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY;
 const marketDataCache = new Map();
@@ -125,22 +143,58 @@ async function analyzeMarket(symbol, interval = '5min') {
   if (!hasMarketVolatility(symbol, candleData)) return { success: true, message: 'Mache a kalm. Pa gen siyal.', signal: null };
 
   let signal = null;
-  if (bazaarlink) {
-    try {
-      const prompt = `Ou se yon motè analiz PAPER TRADING edikatif. Pa egzekite okenn lòd reyèl.
+  let aiNoSignal = false;
+  let aiProviderUsed = null;
+  const prompt = `Ou se yon motè analiz PAPER TRADING edikatif. Pa egzekite okenn lòd reyèl.
 Pair: XAUUSD
 Timeframe: ${interval}
 Candles: ${JSON.stringify(candleData)}
-Si pa gen setup klè, retounen {"has_signal":false}. Sinon retounen sèlman JSON ak has_signal,type,entry_price,tp1,tp2,sl,session,risk_reward.`;
-      const completion = await bazaarlink.chat.completions.create({ model: 'qwen3.7-flash', messages: [{ role: 'user', content: prompt }], temperature: 0.2 });
-      const text = completion.choices?.[0]?.message?.content?.trim() || '';
-      const clean = text.replace(/\`\`\`json|\`\`\`/g, '').trim();
-      signal = normalizeAnalysis(JSON.parse(clean), interval);
-    } catch (err) { console.error('[AI FALLBACK]', err.message); }
+Si pa gen setup klè, retounen {"has_signal":false}. Sinon retounen sèlman yon objè JSON valab ak has_signal,type,entry_price,tp1,tp2,sl,session,risk_reward. Pa mete markdown ni eksplikasyon.`;
+
+  for (const provider of aiProviders) {
+    try {
+      console.log(`[AI ROUTER] Trying ${provider.name} (${provider.model})`);
+      const client = new OpenAI({
+        baseURL: provider.baseURL,
+        apiKey: provider.apiKey,
+        timeout: 20000,
+        maxRetries: 0
+      });
+      const completion = await client.chat.completions.create({
+        model: provider.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2
+      });
+      const responseText = completion.choices?.[0]?.message?.content?.trim() || '';
+      const clean = responseText.replace(/\`\`\`json|\`\`\`/g, '').trim();
+      const parsed = JSON.parse(clean);
+      aiProviderUsed = provider.name;
+
+      if (parsed.has_signal === false) {
+        aiNoSignal = true;
+        console.log(`[AI ROUTER] ${provider.name} returned no signal; no fallback signal will be invented.`);
+        break;
+      }
+
+      signal = normalizeAnalysis(parsed, interval);
+      if (!signal) throw new Error('AI response did not contain a valid, complete signal.');
+      signal.session = signal.session || `${provider.name} AI`;
+      console.log(`[AI ROUTER] ${provider.name} analysis succeeded.`);
+      break;
+    } catch (err) {
+      console.error(`[AI ROUTER] ${provider.name} failed; trying next provider:`, err.message);
+    }
   }
-  if (!signal) signal = normalizeAnalysis(technicalPaperSignal(candleData), interval);
-  if (!signal) return { success: true, message: 'Pa gen setup ki ase klè.', signal: null };
-  return { success: true, signal: await saveSignal(signal) };
+
+  if (aiNoSignal) {
+    return { success: true, message: `${aiProviderUsed} pa jwenn setup ki ase klè.`, signal: null, aiProvider: aiProviderUsed };
+  }
+  if (!signal) {
+    console.warn('[AI ROUTER] All configured AI providers failed or no AI key is configured; using technical paper fallback.');
+    signal = normalizeAnalysis(technicalPaperSignal(candleData), interval);
+  }
+  if (!signal) return { success: true, message: 'Pa gen setup ki ase klè.', signal: null, aiProvider: aiProviderUsed };
+  return { success: true, signal: await saveSignal(signal), aiProvider: aiProviderUsed || 'Technical fallback' };
 }
 
 function calculatePnL(position, exitPrice) { return (exitPrice - position.entry_price) * (position.type === 'BUY' ? 1 : -1) * (position.units || 1000); }
@@ -186,7 +240,7 @@ function getPaperState() {
   return { mode: TRADING_MODE, initialBalance: 10000, balance: Number(paperAccount.balance.toFixed(2)), equity: Number(paperAccount.equity.toFixed(2)), realizedPnL: Number(paperAccount.realizedPnL.toFixed(2)), openPositions, trades: paperAccount.trades.slice(-50).reverse(), lastResetAt: paperAccount.lastResetAt };
 }
 
-app.get('/api/health', (req,res) => res.json({ ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine', supabaseConfigured:Boolean(supabase), marketDataConfigured:Boolean(TWELVE_DATA_KEY), aiConfigured:Boolean(bazaarlink), marketDataCacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false, timestamp:new Date().toISOString() }));
+app.get('/api/health', (req,res) => res.json({ ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine', supabaseConfigured:Boolean(supabase), marketDataConfigured:Boolean(TWELVE_DATA_KEY), aiConfigured:Boolean(aiProviders.length), aiProvidersConfigured:aiProviders.map(provider => provider.name), marketDataCacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false, timestamp:new Date().toISOString() }));
 app.get('/api/market-data/status', async (req,res) => {
   if (!TWELVE_DATA_KEY) return res.status(503).json({ ok:false, configured:false, provider:'Twelve Data', error:'TWELVE_DATA_API_KEY pa konfigire sou Render.', realTradingEnabled:false });
   try {
