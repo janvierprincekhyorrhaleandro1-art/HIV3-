@@ -17,13 +17,13 @@ const supabase = process.env.SUPABASE_ENABLED === 'true' && process.env.SUPABASE
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   : null;
 
-// AI provider failover: Gemini primary, Groq then OpenRouter.
+// AI provider failover: BazaarLink primary, then Groq, OpenRouter, and Gemini.
 const aiProviders = [
   {
-    name: 'Gemini',
-    apiKey: process.env.GEMINI_API_KEY,
-    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
+    name: 'BazaarLink',
+    apiKey: process.env.BAZAARLINK_API_KEY,
+    baseURL: 'https://api.bazaarlink.ai/v1',
+    model: process.env.BAZAARLINK_MODEL || 'qwen/qwen3.7-flash'
   },
   {
     name: 'Groq',
@@ -38,10 +38,10 @@ const aiProviders = [
     model: process.env.OPENROUTER_MODEL || 'openrouter/free'
   },
   {
-    name: 'BazaarLink',
-    apiKey: process.env.BAZAARLINK_API_KEY,
-    baseURL: 'https://api.bazaarlink.ai/v1',
-    model: process.env.BAZAARLINK_MODEL || 'qwen3.7-flash'
+    name: 'Gemini',
+    apiKey: process.env.GEMINI_API_KEY,
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
   }
 ].filter(provider => Boolean(provider.apiKey));
 
