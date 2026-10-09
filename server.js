@@ -36,6 +36,12 @@ const aiProviders = [
     apiKey: process.env.OPENROUTER_API_KEY,
     baseURL: 'https://openrouter.ai/api/v1',
     model: process.env.OPENROUTER_MODEL || 'openrouter/free'
+  },
+  {
+    name: 'BazaarLink',
+    apiKey: process.env.BAZAARLINK_API_KEY,
+    baseURL: 'https://api.bazaarlink.ai/v1',
+    model: process.env.BAZAARLINK_MODEL || 'qwen3.7-flash'
   }
 ].filter(provider => Boolean(provider.apiKey));
 
