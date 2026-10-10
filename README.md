@@ -5,7 +5,7 @@ This version keeps the TRADEX theme but changes the product into a paper-trading
 ## Current mode
 
 - PAPER TRADING ONLY
-- Starting virtual balance: $10,000
+- Starting virtual balance: $100
 - AI market analysis remains enabled when the required API keys are configured.
 - Signals can open virtual positions.
 - Virtual positions are monitored with market data and can close at TP/SL.
