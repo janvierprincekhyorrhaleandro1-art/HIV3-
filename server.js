@@ -320,19 +320,51 @@ function getPaperState() {
   return { mode: TRADING_MODE, initialBalance: paperAccount.initialBalance, balance: Number(paperAccount.balance.toFixed(2)), equity: Number(paperAccount.equity.toFixed(2)), realizedPnL: Number(paperAccount.realizedPnL.toFixed(2)), openPositions, trades: paperAccount.trades.slice(-50).reverse(), lastResetAt: paperAccount.lastResetAt };
 }
 
-app.get('/api/health', (req,res) => res.json({ ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine', supabaseConfigured:Boolean(supabase), persistenceReady, botEnabled:botControl.enabled, startingBalance:paperAccount.initialBalance, marketDataConfigured:Boolean(TWELVE_DATA_KEY), aiConfigured:Boolean(aiProviders.length), aiProvidersConfigured:aiProviders.map(provider => provider.name), marketDataCacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false, timestamp:new Date().toISOString() }));
+app.get('/api/health', (req,res) => res.json({
+  ok:true, mode:TRADING_MODE, service:'HIV3 Paper Trading Engine',
+  supabaseConfigured:Boolean(supabase), persistenceReady, botEnabled:botControl.enabled,
+  startingBalance:paperAccount.initialBalance,
+  marketDataConfigured:true,
+  marketDataProvider:'BiQuote (read-only status)',
+  analysisMarketDataProvider:TWELVE_DATA_KEY ? 'Twelve Data' : null,
+  aiConfigured:Boolean(aiProviders.length), aiProvidersConfigured:aiProviders.map(provider => provider.name),
+  marketDataCacheSeconds:BIQUOTE_CACHE_MS/1000, realTradingEnabled:false, timestamp:new Date().toISOString()
+}));
+
+function extractBiQuotePrice(tick) {
+  const sources = [tick, tick?.data, tick?.quote, tick?.result].filter(Boolean);
+  for (const source of sources) {
+    for (const key of ['mid', 'price', 'last']) {
+      const value = Number(source[key]);
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+    const bid = Number(source.bid);
+    const ask = Number(source.ask);
+    if (Number.isFinite(bid) && bid > 0 && Number.isFinite(ask) && ask > 0) return (bid + ask) / 2;
+  }
+  return null;
+}
+
 app.get('/api/market-data/status', async (req,res) => {
-  if (!TWELVE_DATA_KEY) return res.status(503).json({ ok:false, configured:false, provider:'Twelve Data', error:'TWELVE_DATA_API_KEY pa konfigire sou Render.', realTradingEnabled:false });
   try {
-    const candles = await getMarketData('XAUUSD','5min',2);
-    const latest = candles[0];
-    if (!latest || !Number.isFinite(Number(latest.close))) throw new Error('Twelve Data pa retounen yon pri XAU/USD ki valab.');
-    botControl.lastPrice = Number(latest.close);
-    botControl.lastMarketAt = latest.datetime || new Date().toISOString();
-    return res.json({ ok:true, configured:true, provider:'Twelve Data', symbol:'XAU/USD', price:botControl.lastPrice, marketTime:botControl.lastMarketAt, interval:'5min', cacheSeconds:MARKET_DATA_CACHE_MS/1000, realTradingEnabled:false });
+    const tick = await fetchJson('https://biquote.io/api/XAUUSD');
+    const price = extractBiQuotePrice(tick);
+    if (!Number.isFinite(price) || price <= 0) throw new Error('BiQuote pa retounen yon pri XAU/USD ki valab.');
+    const source = tick?.data || tick?.quote || tick?.result || tick;
+    const marketTime = source.timestamp || source.time || source.datetime || new Date().toISOString();
+    botControl.lastPrice = price;
+    botControl.lastMarketAt = marketTime;
+    return res.json({
+      ok:true, configured:true, provider:'BiQuote', symbol:'XAU/USD', price,
+      marketTime, retrievedAt:new Date().toISOString(), stale:source.stale ?? null,
+      quoteAgeSeconds:source.quoteAgeSeconds ?? null, readOnly:true, realTradingEnabled:false
+    });
   } catch (err) {
-    console.error('[MARKET DATA STATUS]', err.message);
-    return res.status(502).json({ ok:false, configured:true, provider:'Twelve Data', error:err.message, realTradingEnabled:false });
+    console.error('[BIQUOTE MARKET DATA STATUS]', err.message);
+    return res.status(502).json({
+      ok:false, configured:true, provider:'BiQuote', symbol:'XAU/USD',
+      readOnly:true, error:err.message, realTradingEnabled:false
+    });
   }
 });
 // Read-only BiQuote market-data probe. This endpoint does not create signals or paper positions.
