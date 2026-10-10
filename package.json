@@ -4,14 +4,13 @@
   "description": "HIV3 educational paper-trading signal engine",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "postinstall": "npm audit --json > /tmp/hiv3-audit.json || true; node -e \"const r=require('/tmp/hiv3-audit.json'); const vs=Object.entries(r.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:v.via.map(x=>typeof x==='string'?x:x.title)})); console.log('[AUDIT_DETAILS] '+JSON.stringify({meta:r.metadata?.vulnerabilities,vulnerabilities:vs}));\""
+    "start": "node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "node-cron": "^3.0.3",
+    "node-cron": "^4.6.0",
     "openai": "^4.28.0"
   }
 }
