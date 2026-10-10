@@ -335,6 +335,44 @@ app.get('/api/market-data/status', async (req,res) => {
     return res.status(502).json({ ok:false, configured:true, provider:'Twelve Data', error:err.message, realTradingEnabled:false });
   }
 });
+// Read-only BiQuote market-data probe. This endpoint does not create signals or paper positions.
+const biquoteCache = { savedAt: 0, payload: null };
+const BIQUOTE_CACHE_MS = 15000;
+
+app.get('/api/biquote/market-data', async (req, res) => {
+  if (biquoteCache.payload && Date.now() - biquoteCache.savedAt < BIQUOTE_CACHE_MS) {
+    return res.json({ ...biquoteCache.payload, cached: true, cacheAgeMs: Date.now() - biquoteCache.savedAt });
+  }
+  try {
+    const [tick, candles] = await Promise.all([
+      fetchJson('https://biquote.io/api/XAUUSD'),
+      fetchJson('https://biquote.io/api/XAUUSD/ohlc?interval=5m&limit=30')
+    ]);
+    const payload = {
+      ok: true,
+      provider: 'BiQuote',
+      symbol: 'XAU/USD',
+      readOnly: true,
+      retrievedAt: new Date().toISOString(),
+      tick,
+      candles
+    };
+    biquoteCache.savedAt = Date.now();
+    biquoteCache.payload = payload;
+    return res.json({ ...payload, cached: false, cacheAgeMs: 0 });
+  } catch (err) {
+    console.error('[BIQUOTE READ-ONLY DATA ERROR]', err.message);
+    return res.status(502).json({
+      ok: false,
+      provider: 'BiQuote',
+      symbol: 'XAU/USD',
+      readOnly: true,
+      error: err.message,
+      retrievedAt: new Date().toISOString()
+    });
+  }
+});
+
 app.get('/api/signals', async (req,res) => {
   if (supabase) {
     try {
